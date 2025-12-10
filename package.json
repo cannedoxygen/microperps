@@ -1,0 +1,35 @@
+{
+  "name": "left-right-candle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LEFT vs RIGHT: 12H Meme Candle Arena - A Pyth-powered prediction game on Solana",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/left-right-candle"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:program": "pnpm --filter @left-right/programs test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

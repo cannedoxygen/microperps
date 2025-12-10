@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --short-color: #ef4444;
+  --long-color: #22c55e;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600;
+}
+
+/* Wallet adapter overrides */
+.wallet-adapter-button {
+  @apply bg-card border border-border hover:bg-border transition-colors !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  @apply bg-card !important;
+}
+
+/* Betting card animations */
+.bet-card {
+  @apply transition-all duration-300 ease-out;
+}
+
+.bet-card:hover {
+  @apply scale-[1.02];
+}
+
+.bet-card-short {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.bet-card-short:hover {
+  border-color: #ef4444;
+}
+
+.bet-card-long {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.bet-card-long:hover {
+  border-color: #22c55e;
+}
+
+/* Pool bar animation */
+.pool-bar {
+  @apply transition-all duration-500 ease-out;
+}
+
+/* Countdown timer */
+.countdown-digit {
+  @apply font-mono text-4xl font-bold tabular-nums;
+}
+
+/* Price display */
+.price-up {
+  @apply text-long;
+}
+
+.price-down {
+  @apply text-short;
+}
+
+.price-neutral {
+  @apply text-gray-400;
+}
