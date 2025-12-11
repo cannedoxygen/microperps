@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import tokensData from "@/data/tokens.json";
+import { tweetRoundStart, tweetRoundSettled } from "@/lib/twitter";
 
 // Program and config
 const PROGRAM_ID = new PublicKey(
@@ -130,6 +131,20 @@ function findTokenBySymbol(symbol: string): Token | null {
 }
 
 /**
+ * Full round data for settlement tweets
+ */
+interface FullRoundInfo {
+  betCount: number;
+  status: number;
+  assetSymbol: string;
+  startPrice: number;
+  endPrice: number;
+  leftPool: number;
+  rightPool: number;
+  winningSide: "LONG" | "SHORT" | null;
+}
+
+/**
  * Get round info including bet count
  */
 async function getRoundInfo(
@@ -171,6 +186,96 @@ async function getRoundInfo(
   const betCount = data.readUInt32LE(betCountOffset);
 
   return { betCount, status };
+}
+
+/**
+ * Get full round data for settlement tweet
+ */
+async function getFullRoundInfo(
+  connection: Connection,
+  roundId: number
+): Promise<FullRoundInfo | null> {
+  const [roundPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("round"), new BN(roundId).toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  );
+
+  const roundInfo = await connection.getAccountInfo(roundPda);
+  if (!roundInfo) return null;
+
+  const data = roundInfo.data;
+  let offset = 8; // skip discriminator
+
+  // round_id (8)
+  offset += 8;
+
+  // asset_symbol (4 + N)
+  const assetLen = data.readUInt32LE(offset);
+  offset += 4;
+  const assetSymbol = data.slice(offset, offset + assetLen).toString("utf8");
+  offset += assetLen;
+
+  // start_price (8)
+  const startPrice = Number(data.readBigInt64LE(offset));
+  offset += 8;
+
+  // end_price (8)
+  const endPrice = Number(data.readBigInt64LE(offset));
+  offset += 8;
+
+  // start_time (8)
+  offset += 8;
+
+  // betting_end_time (8)
+  offset += 8;
+
+  // end_time (8)
+  offset += 8;
+
+  // status (1)
+  const status = data.readUInt8(offset);
+  offset += 1;
+
+  // left_pool (8) - SHORT
+  const leftPool = Number(data.readBigUInt64LE(offset));
+  offset += 8;
+
+  // right_pool (8) - LONG
+  const rightPool = Number(data.readBigUInt64LE(offset));
+  offset += 8;
+
+  // left_weighted_pool (8)
+  offset += 8;
+
+  // right_weighted_pool (8)
+  offset += 8;
+
+  // bet_count (4)
+  const betCount = data.readUInt32LE(offset);
+  offset += 4;
+
+  // payouts_processed (4)
+  offset += 4;
+
+  // winning_side: Option<Side> (1 + 1 if Some)
+  const winningSideDiscriminant = data.readUInt8(offset);
+  offset += 1;
+  let winningSide: "LONG" | "SHORT" | null = null;
+  if (winningSideDiscriminant === 1) {
+    const sideValue = data.readUInt8(offset);
+    winningSide = sideValue === 0 ? "SHORT" : "LONG"; // 0=Left=SHORT, 1=Right=LONG
+  }
+
+  return {
+    betCount,
+    status,
+    assetSymbol: assetSymbol.toUpperCase(),
+    startPrice,
+    endPrice,
+    leftPool,
+    rightPool,
+    winningSide,
+  };
 }
 
 /**
@@ -525,12 +630,37 @@ export default async function handler(
     console.log(`Selected token: ${token.tokenSymbol} (${token.tokenName})`);
 
     // Settle previous round if exists (fetches the correct token's price)
+    let settlementTweetId: string | null = null;
     if (currentRoundId > 0) {
-      const settled = await settlePreviousRound(connection, admin, currentRoundId - 1);
+      const prevRoundId = currentRoundId - 1;
+      const settled = await settlePreviousRound(connection, admin, prevRoundId);
 
       // If settled successfully, process all payouts
       if (settled) {
-        await processPayouts(connection, admin, currentRoundId - 1);
+        const payoutsProcessed = await processPayouts(connection, admin, prevRoundId);
+
+        // Get full round data for settlement tweet
+        const fullRoundInfo = await getFullRoundInfo(connection, prevRoundId);
+        if (fullRoundInfo && fullRoundInfo.winningSide) {
+          // Tweet settlement (non-blocking - don't await)
+          tweetRoundSettled(
+            prevRoundId,
+            fullRoundInfo.assetSymbol,
+            fullRoundInfo.startPrice,
+            fullRoundInfo.endPrice,
+            fullRoundInfo.winningSide,
+            fullRoundInfo.leftPool + fullRoundInfo.rightPool,
+            payoutsProcessed
+          )
+            .then((tweetId) => {
+              if (tweetId) {
+                console.log(`[Twitter] Settlement tweet posted: ${tweetId}`);
+              }
+            })
+            .catch((err) => {
+              console.error("[Twitter] Failed to post settlement tweet:", err);
+            });
+        }
       }
     }
 
@@ -548,6 +678,24 @@ export default async function handler(
     );
 
     console.log(`Started round ${currentRoundId}: ${sig}`);
+
+    // Tweet about the new round (non-blocking)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://microperps.fun";
+    tweetRoundStart(
+      currentRoundId,
+      token.tokenSymbol,
+      token.tokenName,
+      currentPrice,
+      baseUrl
+    )
+      .then((tweetId) => {
+        if (tweetId) {
+          console.log(`[Twitter] Round start tweet posted: ${tweetId}`);
+        }
+      })
+      .catch((err) => {
+        console.error("[Twitter] Failed to post round start tweet:", err);
+      });
 
     return res.status(200).json({
       success: true,
