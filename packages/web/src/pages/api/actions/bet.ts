@@ -235,8 +235,6 @@ const getActionMetadata = (
   const downOdds = totalPool > 0 ? ((round.downPool / totalPool) * 100).toFixed(0) : "50";
   const upOdds = totalPool > 0 ? ((round.upPool / totalPool) * 100).toFixed(0) : "50";
   const timeLeft = formatTimeRemaining(round.bettingEndTime);
-  const priceChangeIcon = round.priceChange24h >= 0 ? "📈" : "📉";
-  const priceChangeColor = round.priceChange24h >= 0 ? "+" : "";
 
   // Base URL for this API - use stable production URL
   const baseHref = `/api/actions/bet`;
@@ -245,7 +243,7 @@ const getActionMetadata = (
   return {
     type: "action",
     icon: `${baseUrl}/api/og?asset=${round.asset}&price=${round.currentPrice.toFixed(6)}&startPrice=${round.startPrice.toFixed(6)}&round=${roundId}&shortPct=${downOdds}&longPct=${upOdds}&shortSol=${round.downPool.toFixed(1)}&longSol=${round.upPool.toFixed(1)}&time=${encodeURIComponent(timeLeft)}`,
-    title: `${round.asset} ${priceChangeIcon} $${round.currentPrice.toFixed(4)}`,
+    title: `microperps - Round #${roundId}`,
     description: `Predict if ${round.asset} goes up or down in 24 hours.`,
     label: "Place Bet",
     links: {
