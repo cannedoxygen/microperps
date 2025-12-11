@@ -1,9 +1,19 @@
 import { ImageResponse } from "@vercel/og";
 import type { NextRequest } from "next/server";
+import tokensData from "@/data/tokens.json";
 
 export const config = {
   runtime: "edge",
 };
+
+// Build token images map from tokens.json
+const tokenImages: Record<string, string> = {};
+for (const token of tokensData.data) {
+  tokenImages[token.tokenSymbol.toUpperCase()] = token.tokenImageLogo;
+}
+// Add fallbacks
+tokenImages.SOL = "https://assets.coingecko.com/coins/images/4128/large/solana.png";
+tokenImages.BTC = "https://assets.coingecko.com/coins/images/1/large/bitcoin.png";
 
 export default async function handler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -15,14 +25,6 @@ export default async function handler(req: NextRequest) {
 
   const isPositive = change >= 0;
   const changeText = `${isPositive ? "+" : ""}${change.toFixed(2)}%`;
-
-  // Token images from CoinGecko
-  const tokenImages: Record<string, string> = {
-    WIF: "https://assets.coingecko.com/coins/images/33566/large/dogwifhat.jpg",
-    BONK: "https://assets.coingecko.com/coins/images/28600/large/bonk.jpg",
-    SOL: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
-    BTC: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-  };
 
   return new ImageResponse(
     (
