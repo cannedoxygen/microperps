@@ -158,6 +158,62 @@ Next round starting soon... 👀`;
 }
 
 /**
+ * Tweet when betting closes (12 hours into round)
+ */
+export async function tweetBettingClosed(
+  roundId: number,
+  tokenSymbol: string,
+  currentPrice: number,
+  startPrice: number,
+  longPool: number,
+  shortPool: number
+): Promise<string | null> {
+  const client = getTwitterClient();
+  if (!client) {
+    console.log("[Twitter] Skipping betting closed tweet - client not available");
+    return null;
+  }
+
+  // Calculate current change
+  const change = startPrice > 0 ? ((currentPrice - startPrice) / startPrice) * 100 : 0;
+  const changeStr = change >= 0 ? `+${change.toFixed(2)}` : change.toFixed(2);
+  const changeEmoji = change >= 0 ? "📈" : "📉";
+
+  // Calculate pool percentages
+  const totalPool = longPool + shortPool;
+  const longPct = totalPool > 0 ? ((longPool / totalPool) * 100).toFixed(0) : "50";
+  const shortPct = totalPool > 0 ? ((shortPool / totalPool) * 100).toFixed(0) : "50";
+
+  const longSol = (longPool / 1e9).toFixed(2);
+  const shortSol = (shortPool / 1e9).toFixed(2);
+  const totalSol = (totalPool / 1e9).toFixed(2);
+
+  const text = `🔒 BETTING CLOSED for Round #${roundId}!
+
+$${tokenSymbol.toUpperCase()} ${changeEmoji} ${changeStr}% since start
+
+Final positions:
+🟢 LONG: ${longSol} SOL (${longPct}%)
+🔴 SHORT: ${shortSol} SOL (${shortPct}%)
+
+💰 Total pool: ${totalSol} SOL
+
+⏰ Settlement in 12 hours...
+
+Who will win? 👀`;
+
+  try {
+    console.log("[Twitter] Posting betting closed tweet...");
+    const tweet = await client.v2.tweet(text);
+    console.log("[Twitter] Betting closed tweet posted:", tweet.data.id);
+    return tweet.data.id;
+  } catch (error) {
+    console.error("[Twitter] Failed to post betting closed tweet:", error);
+    return null;
+  }
+}
+
+/**
  * Tweet a mid-round reminder (optional - call 6 hours into betting)
  */
 export async function tweetMidRoundReminder(
