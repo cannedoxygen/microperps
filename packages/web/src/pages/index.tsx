@@ -37,10 +37,10 @@ export default function Home() {
       <main className="container mx-auto px-4 py-16">
         {/* What is it */}
         <div className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold mb-6 text-center">What is microperps?</h2>
+          <h2 className="text-3xl font-bold mb-6 text-center">What is Microperps?</h2>
           <div className="bg-card rounded-xl border border-border p-8">
             <p className="text-gray-300 text-lg leading-relaxed mb-4">
-              microperps is a prediction market game on Solana where you bet on whether a meme token's price will go up or down over 24 hours.
+              Microperps is a prediction market game on Solana where you bet on whether a meme token's price will go up or down over 24 hours.
             </p>
             <p className="text-gray-300 text-lg leading-relaxed mb-4">
               Every day, a random meme token is selected from a pool of 30+ tokens. Players have 12 hours to place their bets on LONG (price goes up) or SHORT (price goes down). After another 12 hours, the final price is recorded and winners take the pot.

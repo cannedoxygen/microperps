@@ -33,12 +33,6 @@ export const Footer: FC = () => {
               </svg>
               <span>@microperps</span>
             </a>
-            <a
-              href="/"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              About
-            </a>
           </div>
         </div>
 
