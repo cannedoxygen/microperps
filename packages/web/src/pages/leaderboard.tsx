@@ -1,9 +1,47 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useLeaderboard, LeaderboardEntry } from "@/hooks/useLeaderboard";
+import { useLeaderboard, useReferralLeaderboard, LeaderboardEntry, ReferralLeaderboardEntry } from "@/hooks/useLeaderboard";
 
 function formatAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
+function ReferralRow({ entry, rank }: { entry: ReferralLeaderboardEntry; rank: number }) {
+  return (
+    <tr className="border-b border-border hover:bg-card/50 transition-colors">
+      <td className="py-4 px-4 text-center">
+        <span className={`font-bold text-lg ${
+          rank === 1 ? "text-yellow-400" :
+          rank === 2 ? "text-gray-300" :
+          rank === 3 ? "text-amber-600" : "text-gray-500"
+        }`}>
+          {rank === 1 && "🥇 "}
+          {rank === 2 && "🥈 "}
+          {rank === 3 && "🥉 "}
+          #{rank}
+        </span>
+      </td>
+      <td className="py-4 px-4">
+        <a
+          href={`https://solscan.io/account/${entry.address}?cluster=devnet`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-blue-400 hover:text-blue-300 transition-colors"
+        >
+          {formatAddress(entry.address)}
+        </a>
+      </td>
+      <td className="py-4 px-4 text-right font-mono text-gray-300">
+        {entry.referralCount}
+      </td>
+      <td className="py-4 px-4 text-right font-mono text-gray-300">
+        {entry.totalVolume.toFixed(4)} SOL
+      </td>
+      <td className="py-4 px-4 text-right font-mono font-bold text-long">
+        +{entry.estimatedEarnings.toFixed(4)} SOL
+      </td>
+    </tr>
+  );
 }
 
 function LeaderboardRow({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
@@ -62,6 +100,7 @@ function LeaderboardRow({ entry, rank }: { entry: LeaderboardEntry; rank: number
 
 export default function Leaderboard() {
   const { data: entries, isLoading, error } = useLeaderboard();
+  const { data: referralEntries, isLoading: referralLoading } = useReferralLeaderboard();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -165,6 +204,85 @@ export default function Leaderboard() {
             </div>
           </div>
         )}
+
+        {/* Referral Leaderboard */}
+        <div className="mt-16">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold">Referral Leaderboard</h2>
+              <p className="text-gray-400 mt-1">Top referrers by volume</p>
+            </div>
+          </div>
+
+          {/* Referral Loading State */}
+          {referralLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading referral leaderboard...</p>
+            </div>
+          )}
+
+          {/* Referral Empty State */}
+          {!referralLoading && (!referralEntries || referralEntries.length === 0) && (
+            <div className="text-center py-12 bg-card rounded-xl border border-border">
+              <p className="text-4xl mb-4">🔗</p>
+              <p className="text-gray-400 text-lg">No referrals yet</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Share your referral link to earn 1% of every bet placed through it!
+              </p>
+            </div>
+          )}
+
+          {/* Referral Leaderboard Table */}
+          {referralEntries && referralEntries.length > 0 && (
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-background">
+                    <tr className="text-gray-400 text-sm">
+                      <th className="py-3 px-4 text-center">Rank</th>
+                      <th className="py-3 px-4 text-left">Referrer</th>
+                      <th className="py-3 px-4 text-right">Bets Referred</th>
+                      <th className="py-3 px-4 text-right">Volume</th>
+                      <th className="py-3 px-4 text-right">Earnings (1%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {referralEntries.map((entry, index) => (
+                      <ReferralRow
+                        key={entry.address}
+                        entry={entry}
+                        rank={index + 1}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Referral Stats Summary */}
+          {referralEntries && referralEntries.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8">
+              <div className="bg-card rounded-xl border border-border p-4 text-center">
+                <p className="text-gray-400 text-sm">Total Referrers</p>
+                <p className="text-2xl font-bold">{referralEntries.length}</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-4 text-center">
+                <p className="text-gray-400 text-sm">Total Referred Volume</p>
+                <p className="text-2xl font-bold font-mono">
+                  {referralEntries.reduce((sum, e) => sum + e.totalVolume, 0).toFixed(2)} SOL
+                </p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-4 text-center">
+                <p className="text-gray-400 text-sm">Total Referral Earnings</p>
+                <p className="text-2xl font-bold font-mono text-long">
+                  +{referralEntries.reduce((sum, e) => sum + e.estimatedEarnings, 0).toFixed(4)} SOL
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <Footer />

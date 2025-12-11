@@ -40,6 +40,14 @@ interface BetInfo {
   originalAmount: number;
   weight: number;
   paidOut: boolean;
+  referrer: string | null;
+}
+
+export interface ReferralLeaderboardEntry {
+  address: string;
+  referralCount: number; // number of bets referred
+  totalVolume: number; // total SOL referred
+  estimatedEarnings: number; // 1% of volume
 }
 
 function getRoundPda(roundId: number): PublicKey {
@@ -157,6 +165,15 @@ function decodeBet(data: Buffer): BetInfo | null {
     offset += 4; // bet_index
 
     const paidOut = data[offset] === 1;
+    offset += 1;
+
+    // referrer: Option<Pubkey> - 1 byte discriminant + 32 bytes if Some
+    let referrer: string | null = null;
+    const hasReferrer = data[offset] === 1;
+    offset += 1;
+    if (hasReferrer) {
+      referrer = new PublicKey(data.slice(offset, offset + 32)).toBase58();
+    }
 
     return {
       roundId,
@@ -166,6 +183,7 @@ function decodeBet(data: Buffer): BetInfo | null {
       originalAmount,
       weight,
       paidOut,
+      referrer,
     };
   } catch {
     return null;
@@ -285,6 +303,95 @@ export function useLeaderboard() {
   return useQuery<LeaderboardEntry[]>({
     queryKey: ["leaderboard"],
     queryFn: fetchLeaderboard,
+    staleTime: 60000,
+    refetchInterval: 120000,
+  });
+}
+
+async function fetchReferralLeaderboard(): Promise<ReferralLeaderboardEntry[]> {
+  const connection = new Connection(RPC_URL, "confirmed");
+
+  // Get round counter from config
+  const configInfo = await connection.getAccountInfo(CONFIG_PDA);
+  if (!configInfo) return [];
+
+  const roundCounter = new BN(configInfo.data.slice(92, 100), "le").toNumber();
+  if (roundCounter === 0) return [];
+
+  // Fetch all rounds to get bet counts
+  const roundPdas = Array.from({ length: roundCounter }, (_, i) => getRoundPda(i));
+  const roundAccounts = await connection.getMultipleAccountsInfo(roundPdas);
+
+  const rounds: RoundInfo[] = [];
+  for (const account of roundAccounts) {
+    if (account) {
+      const round = decodeRound(account.data as Buffer);
+      if (round) {
+        rounds.push(round);
+      }
+    }
+  }
+
+  if (rounds.length === 0) return [];
+
+  // Fetch all bets from all rounds (not just settled ones - referrals count immediately)
+  const allBetPdas: PublicKey[] = [];
+
+  for (const round of rounds) {
+    for (let i = 0; i < round.betCount; i++) {
+      allBetPdas.push(getBetPda(round.roundId, i));
+    }
+  }
+
+  // Batch fetch bets (max 100 at a time)
+  const allBets: BetInfo[] = [];
+  const batchSize = 100;
+  for (let i = 0; i < allBetPdas.length; i += batchSize) {
+    const batch = allBetPdas.slice(i, i + batchSize);
+    const accounts = await connection.getMultipleAccountsInfo(batch);
+    for (const account of accounts) {
+      if (account) {
+        const bet = decodeBet(account.data as Buffer);
+        if (bet) {
+          allBets.push(bet);
+        }
+      }
+    }
+  }
+
+  // Aggregate by referrer
+  const referrerStats: Map<string, { count: number; volume: number }> = new Map();
+
+  for (const bet of allBets) {
+    if (bet.referrer) {
+      const stats = referrerStats.get(bet.referrer) || { count: 0, volume: 0 };
+      stats.count += 1;
+      stats.volume += bet.originalAmount;
+      referrerStats.set(bet.referrer, stats);
+    }
+  }
+
+  // Convert to leaderboard entries
+  const entries: ReferralLeaderboardEntry[] = [];
+  Array.from(referrerStats.entries()).forEach(([address, stats]) => {
+    entries.push({
+      address,
+      referralCount: stats.count,
+      totalVolume: stats.volume,
+      estimatedEarnings: stats.volume * 0.01, // 1% referral fee
+    });
+  });
+
+  // Sort by total volume descending
+  entries.sort((a, b) => b.totalVolume - a.totalVolume);
+
+  return entries;
+}
+
+export function useReferralLeaderboard() {
+  return useQuery<ReferralLeaderboardEntry[]>({
+    queryKey: ["referralLeaderboard"],
+    queryFn: fetchReferralLeaderboard,
     staleTime: 60000,
     refetchInterval: 120000,
   });
