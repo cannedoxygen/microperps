@@ -64,33 +64,6 @@ export default function Home() {
       <Header />
 
       <main className="container mx-auto px-4 py-8 flex-1">
-        {/* How to Play */}
-        <div className="mb-8 bg-card rounded-xl border border-border p-6">
-          <h2 className="text-xl font-bold mb-4 text-center">How to Play</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-            <div className="p-4">
-              <div className="text-3xl mb-2">1</div>
-              <h3 className="font-semibold mb-1">Random Token</h3>
-              <p className="text-sm text-gray-400">Every 24 hours a random meme token is selected for prediction</p>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">2</div>
-              <h3 className="font-semibold mb-1">Bet Early</h3>
-              <p className="text-sm text-gray-400">12h betting window. Earlier bets get up to 1.5x weight bonus!</p>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">3</div>
-              <h3 className="font-semibold mb-1">Wait & Watch</h3>
-              <p className="text-sm text-gray-400">After betting closes, 12h wait until price is recorded</p>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">4</div>
-              <h3 className="font-semibold mb-1">Win the Pool</h3>
-              <p className="text-sm text-gray-400">Winners get bet back + weighted share of losers' pool</p>
-            </div>
-          </div>
-        </div>
-
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-12">
