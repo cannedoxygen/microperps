@@ -1,6 +1,6 @@
 import { ImageResponse } from "@vercel/og";
 import type { NextRequest } from "next/server";
-import tokensData from "@/data/tokens.json";
+import tokensData from "../../data/tokens.json";
 
 export const config = {
   runtime: "edge",
