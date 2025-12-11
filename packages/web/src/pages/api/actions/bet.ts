@@ -244,7 +244,7 @@ const getActionMetadata = (
 
   return {
     type: "action",
-    icon: `${baseUrl}/api/og?asset=${round.asset}&price=${round.currentPrice.toFixed(4)}&change=${round.priceChange24h.toFixed(2)}&round=${roundId}`,
+    icon: `${baseUrl}/api/og?asset=${round.asset}&price=${round.currentPrice.toFixed(4)}&change=${round.priceChange24h.toFixed(2)}&round=${roundId}&shortPct=${downOdds}&longPct=${upOdds}&shortSol=${round.downPool.toFixed(1)}&longSol=${round.upPool.toFixed(1)}&time=${encodeURIComponent(timeLeft)}`,
     title: `${round.asset} ${priceChangeIcon} $${round.currentPrice.toFixed(4)}`,
     description: `24h: ${priceChangeColor}${round.priceChange24h.toFixed(2)}% │ Round #${roundId}\n\n🔴 SHORT ${downOdds}% (${round.downPool.toFixed(1)} SOL)\n🟢 LONG ${upOdds}% (${round.upPool.toFixed(1)} SOL)\n\n⏱️ ${timeLeft} left to bet`,
     label: "Place Bet",
