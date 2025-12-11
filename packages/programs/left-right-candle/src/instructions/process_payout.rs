@@ -114,12 +114,25 @@ pub fn handler(ctx: Context<ProcessPayout>) -> Result<()> {
         }
 
         if payout > 0 {
-            // Transfer payout from vault to bettor
-            let vault_info = ctx.accounts.vault.to_account_info();
-            let bettor_info = ctx.accounts.bettor.to_account_info();
+            // Transfer payout from vault to bettor using CPI with PDA signer
+            let round_id_bytes = round.round_id.to_le_bytes();
+            let vault_seeds = &[
+                b"vault".as_ref(),
+                round_id_bytes.as_ref(),
+                &[ctx.bumps.vault],
+            ];
 
-            **vault_info.try_borrow_mut_lamports()? -= payout;
-            **bettor_info.try_borrow_mut_lamports()? += payout;
+            anchor_lang::system_program::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer {
+                        from: ctx.accounts.vault.to_account_info(),
+                        to: ctx.accounts.bettor.to_account_info(),
+                    },
+                    &[vault_seeds],
+                ),
+                payout,
+            )?;
 
             emit!(PayoutProcessed {
                 round_id: round.round_id,

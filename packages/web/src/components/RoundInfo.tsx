@@ -8,9 +8,10 @@ import { formatSol, formatCountdown, getBettingTimeRemaining, getRoundTimeRemain
 interface Props {
   round: Round;
   currentPrice?: number;
+  tokenImage?: string;
 }
 
-export const RoundInfo: FC<Props> = ({ round, currentPrice }) => {
+export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
   const [mounted, setMounted] = useState(false);
   const [bettingTimeRemaining, setBettingTimeRemaining] = useState(0);
   const [settlementTimeRemaining, setSettlementTimeRemaining] = useState(0);
@@ -52,7 +53,20 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice }) => {
   }
 
   return (
-    <div className="bg-card rounded-xl p-6 border border-border">
+    <div
+      className="bg-card rounded-xl p-6 border border-border relative overflow-hidden"
+      style={tokenImage ? {
+        backgroundImage: `url(${tokenImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : undefined}
+    >
+      {/* Dark overlay to ensure text readability */}
+      {tokenImage && (
+        <div className="absolute inset-0 bg-black/80" />
+      )}
+      {/* Content wrapper with relative positioning to stay above overlay */}
+      <div className={tokenImage ? "relative z-10" : ""}>
       {/* Asset and Round Info */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -171,6 +185,7 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice }) => {
           <span className="text-gray-400">Status</span>
           <p className="capitalize">{round.status}</p>
         </div>
+      </div>
       </div>
     </div>
   );

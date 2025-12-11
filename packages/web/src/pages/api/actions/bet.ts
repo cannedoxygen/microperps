@@ -14,6 +14,7 @@ import {
 } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import type { NextApiRequest, NextApiResponse } from "next";
+import tokensData from "@/data/tokens.json";
 
 // Program constants
 const PROGRAM_ID = new PublicKey(
@@ -24,7 +25,7 @@ const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.co
 // Anchor discriminator for place_bet (sha256("global:place_bet")[0:8])
 const PLACE_BET_DISCRIMINATOR = Buffer.from([222, 62, 67, 220, 63, 166, 126, 33]);
 
-// Token metadata for display
+// Token metadata for display - built from tokens.json
 interface TokenInfo {
   symbol: string;
   name: string;
@@ -32,32 +33,15 @@ interface TokenInfo {
   coingeckoId: string;
 }
 
-const TOKENS: Record<string, TokenInfo> = {
-  WIF: {
-    symbol: "WIF",
-    name: "dogwifhat",
-    image: "https://assets.coingecko.com/coins/images/33566/large/dogwifhat.jpg",
-    coingeckoId: "dogwifcoin",
-  },
-  BONK: {
-    symbol: "BONK",
-    name: "Bonk",
-    image: "https://assets.coingecko.com/coins/images/28600/large/bonk.jpg",
-    coingeckoId: "bonk",
-  },
-  SOL: {
-    symbol: "SOL",
-    name: "Solana",
-    image: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
-    coingeckoId: "solana",
-  },
-  BTC: {
-    symbol: "BTC",
-    name: "Bitcoin",
-    image: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-    coingeckoId: "bitcoin",
-  },
-};
+const TOKENS: Record<string, TokenInfo> = {};
+(tokensData.data as any[]).forEach((token) => {
+  TOKENS[token.tokenSymbol.toUpperCase()] = {
+    symbol: token.tokenSymbol.toUpperCase(),
+    name: token.tokenName,
+    image: token.tokenImageLogo,
+    coingeckoId: token.coinGeckoId,
+  };
+});
 
 interface RoundData {
   asset: string;
@@ -300,9 +284,9 @@ const getActionMetadata = (
             },
           ],
         } as any,
-        // Get My Link - returns personalized referral link (no transaction)
+        // Get My Link - returns personalized referral link via post-message
         {
-          type: "message",
+          type: "post",
           label: "🔗 Get My Link",
           href: `${baseHref}?round=${roundId}&action=getlink`,
         } as any,
@@ -392,10 +376,22 @@ export default async function handler(
         const actionUrl = `${baseUrl}/api/actions/bet?round=${roundId}&ref=${userPubkey.toBase58()}`;
         const blinkUrl = `https://dial.to/?action=solana-action:${encodeURIComponent(actionUrl)}`;
 
-        // Return a "completed" action that just shows a message (no transaction needed)
+        // Return a post response with message (no transaction)
         return res.status(200).json({
-          type: "completed",
+          type: "post",
           message: `🔗 Your referral link:\n\n${blinkUrl}\n\nShare on Twitter/X to earn 1% of every bet placed through your link!`,
+          links: {
+            next: {
+              type: "inline",
+              action: {
+                type: "completed",
+                title: "Your Referral Link",
+                icon: `${baseUrl}/api/og?asset=LINK&round=${roundId}`,
+                description: `Share this link to earn 1% of bets:\n\n${blinkUrl}`,
+                label: "Link Generated!",
+              },
+            },
+          },
         });
       }
 

@@ -21,6 +21,7 @@ const CONFIG_PDA = new PublicKey(
 // Instruction discriminators (sha256 hash of "global:<instruction_name>")
 const START_ROUND_DISCRIMINATOR = Buffer.from([144, 144, 43, 7, 193, 42, 217, 215]);
 const SETTLE_ROUND_DISCRIMINATOR = Buffer.from([40, 101, 18, 1, 31, 129, 52, 77]);
+const PROCESS_PAYOUT_DISCRIMINATOR = Buffer.from([48, 192, 129, 57, 230, 161, 233, 148]);
 
 // Round duration: 24 hours in seconds (12h betting + 12h waiting)
 const ROUND_DURATION = 24 * 60 * 60;
@@ -126,6 +127,165 @@ async function getRoundAsset(connection: Connection, roundId: number): Promise<s
 function findTokenBySymbol(symbol: string): Token | null {
   const tokens = tokensData.data as Token[];
   return tokens.find((t) => t.tokenSymbol.toUpperCase() === symbol.toUpperCase()) || null;
+}
+
+/**
+ * Get round info including bet count
+ */
+async function getRoundInfo(
+  connection: Connection,
+  roundId: number
+): Promise<{ betCount: number; status: number } | null> {
+  const [roundPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("round"), new BN(roundId).toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  );
+
+  const roundInfo = await connection.getAccountInfo(roundPda);
+  if (!roundInfo) return null;
+
+  const data = roundInfo.data;
+  // Layout after discriminator (8 bytes):
+  // 8: round_id
+  // 4 + N: asset_symbol (String - 4 byte len + chars)
+  // Need to read string length first to find bet_count offset
+  const assetLen = data.readUInt32LE(16);
+  const baseOffset = 20 + assetLen; // After asset_symbol
+
+  // After asset_symbol:
+  // 8: start_price
+  // 8: end_price
+  // 8: start_time
+  // 8: betting_end_time
+  // 8: end_time
+  // 1: status
+  // 8: left_pool
+  // 8: right_pool
+  // 8: left_weighted_pool
+  // 8: right_weighted_pool
+  // 4: bet_count
+  const statusOffset = baseOffset + 8 + 8 + 8 + 8 + 8;
+  const betCountOffset = statusOffset + 1 + 8 + 8 + 8 + 8;
+
+  const status = data.readUInt8(statusOffset);
+  const betCount = data.readUInt32LE(betCountOffset);
+
+  return { betCount, status };
+}
+
+/**
+ * Get bettor pubkey from bet account
+ */
+async function getBetInfo(
+  connection: Connection,
+  roundId: number,
+  betIndex: number
+): Promise<{ bettor: PublicKey; betPda: PublicKey } | null> {
+  const [betPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("bet"),
+      new BN(roundId).toArrayLike(Buffer, "le", 8),
+      new BN(betIndex).toArrayLike(Buffer, "le", 4),
+    ],
+    PROGRAM_ID
+  );
+
+  const betInfo = await connection.getAccountInfo(betPda);
+  if (!betInfo) return null;
+
+  // Bet layout after discriminator (8 bytes):
+  // 8: round_id
+  // 32: bettor
+  const bettor = new PublicKey(betInfo.data.slice(16, 48));
+
+  return { bettor, betPda };
+}
+
+/**
+ * Process all payouts for a settled round
+ */
+async function processPayouts(
+  connection: Connection,
+  admin: Keypair,
+  roundId: number
+): Promise<number> {
+  const roundInfo = await getRoundInfo(connection, roundId);
+  if (!roundInfo) {
+    console.log(`Round ${roundId} not found for payouts`);
+    return 0;
+  }
+
+  // Status 2 = Settling (ready for payouts)
+  if (roundInfo.status !== 2) {
+    console.log(`Round ${roundId} not in Settling status (status=${roundInfo.status})`);
+    return 0;
+  }
+
+  const betCount = roundInfo.betCount;
+  console.log(`Processing ${betCount} payouts for round ${roundId}`);
+
+  if (betCount === 0) {
+    console.log(`No bets to process for round ${roundId}`);
+    return 0;
+  }
+
+  // Find round and vault PDAs
+  const [roundPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("round"), new BN(roundId).toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  );
+  const [vaultPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), new BN(roundId).toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  );
+
+  let processed = 0;
+
+  // Process each bet (batch into transactions of up to 5 payouts each)
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < betCount; i += BATCH_SIZE) {
+    const batchEnd = Math.min(i + BATCH_SIZE, betCount);
+    const tx = new Transaction();
+
+    for (let j = i; j < batchEnd; j++) {
+      const betInfo = await getBetInfo(connection, roundId, j);
+      if (!betInfo) {
+        console.log(`Bet ${j} not found, skipping`);
+        continue;
+      }
+
+      // Build process_payout instruction
+      const payoutIx = new TransactionInstruction({
+        keys: [
+          { pubkey: roundPda, isSigner: false, isWritable: true },
+          { pubkey: betInfo.betPda, isSigner: false, isWritable: true },
+          { pubkey: vaultPda, isSigner: false, isWritable: true },
+          { pubkey: betInfo.bettor, isSigner: false, isWritable: true },
+          { pubkey: new PublicKey("11111111111111111111111111111111"), isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: PROCESS_PAYOUT_DISCRIMINATOR,
+      });
+
+      tx.add(payoutIx);
+    }
+
+    if (tx.instructions.length > 0) {
+      try {
+        const sig = await sendAndConfirmTransaction(connection, tx, [admin], {
+          commitment: "confirmed",
+        });
+        console.log(`Processed payouts ${i}-${batchEnd - 1}: ${sig}`);
+        processed += tx.instructions.length;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`Failed to process payouts ${i}-${batchEnd - 1}: ${errorMessage}`);
+      }
+    }
+  }
+
+  console.log(`Processed ${processed}/${betCount} payouts for round ${roundId}`);
+  return processed;
 }
 
 /**
@@ -366,7 +526,12 @@ export default async function handler(
 
     // Settle previous round if exists (fetches the correct token's price)
     if (currentRoundId > 0) {
-      await settlePreviousRound(connection, admin, currentRoundId - 1);
+      const settled = await settlePreviousRound(connection, admin, currentRoundId - 1);
+
+      // If settled successfully, process all payouts
+      if (settled) {
+        await processPayouts(connection, admin, currentRoundId - 1);
+      }
     }
 
     // Fetch current price from Pyth for the NEW round

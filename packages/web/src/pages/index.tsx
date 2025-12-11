@@ -1,186 +1,138 @@
-import { BN } from "@coral-xyz/anchor";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
-import { RoundInfo } from "@/components/RoundInfo";
-import { BettingCard } from "@/components/BettingCard";
-import { ShareBlink } from "@/components/ShareBlink";
-import { RecentBets } from "@/components/RecentBets";
-import { useCurrentRound } from "@/hooks/useCurrentRound";
-import { usePlaceBet } from "@/hooks/usePlaceBet";
-import { useLivePrice } from "@/hooks/useLivePrice";
-import { useRoundBets } from "@/hooks/useRoundBets";
-import { Side } from "@/types";
-
-// Default config values (used when no round exists)
-const defaultConfig = {
-  feeBps: 250,
-  minBetLamports: new BN(0.01 * 1e9),
-  maxBetLamports: new BN(10 * 1e9),
-};
+import { Footer } from "@/components/Footer";
 
 export default function Home() {
-  const { connected } = useWallet();
-  const queryClient = useQueryClient();
-  const { data: roundData, isLoading, error } = useCurrentRound();
-  const { placeBet, isLoading: isBetting, error: betError } = usePlaceBet();
-
-  const round = roundData?.round;
-  const config = roundData?.config;
-
-  // Fetch live price for the current token
-  const { data: priceData } = useLivePrice(round?.assetSymbol);
-
-  // Fetch bets for the current round
-  const { data: bets, isLoading: betsLoading } = useRoundBets(
-    round?.roundId.toNumber(),
-    round?.betCount
-  );
-
-  const handlePlaceBet = async (side: Side, amount: BN) => {
-    if (!round) return;
-
-    const roundId = round.roundId.toNumber();
-    console.log("Placing bet:", { roundId, side, amount: amount.toString() });
-
-    const result = await placeBet(roundId, side, amount);
-
-    if (result?.success) {
-      // Invalidate query to refresh round data
-      queryClient.invalidateQueries({ queryKey: ["currentRound"] });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
-        {/* How to Play */}
-        <div className="mb-8 bg-card rounded-xl border border-border p-6">
-          <h2 className="text-xl font-bold mb-4 text-center">How to Play</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-            <div className="p-4">
-              <div className="text-3xl mb-2">1</div>
-              <h3 className="font-semibold mb-1">Random Token</h3>
-              <p className="text-sm text-gray-400">Every 24 hours a random meme token is selected for prediction</p>
+      <main className="container mx-auto px-4 py-12 flex-1">
+        {/* Hero */}
+        <div className="text-center mb-16 py-8">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            <span className="text-long drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]">μ</span>perps
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-8">
+            The simplest way to bet on meme coins.<br />
+            Predict if a token goes up or down in 24 hours.
+          </p>
+
+          {/* CTA right in hero */}
+          <a
+            href="/play"
+            className="inline-block bg-long hover:bg-long/80 text-black font-bold py-4 px-10 rounded-lg text-xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+          >
+            Start Playing
+          </a>
+        </div>
+
+        {/* What is it */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold mb-6 text-center">What is microperps?</h2>
+          <div className="bg-card rounded-xl border border-border p-8">
+            <p className="text-gray-300 text-lg leading-relaxed mb-4">
+              microperps is a prediction market game on Solana where you bet on whether a meme token's price will go up or down over 24 hours.
+            </p>
+            <p className="text-gray-300 text-lg leading-relaxed mb-4">
+              Every day, a random meme token is selected from a pool of 30+ tokens. Players have 12 hours to place their bets on LONG (price goes up) or SHORT (price goes down). After another 12 hours, the final price is recorded and winners take the pot.
+            </p>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              It's simple: pick a side, bet your SOL, and see if you're right.
+            </p>
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold mb-6 text-center">How It Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-card rounded-xl border border-border p-6">
+              <div className="text-4xl mb-4">1</div>
+              <h3 className="text-xl font-bold mb-2">Random Token Selection</h3>
+              <p className="text-gray-400">
+                Every 24 hours, a random meme token is selected. The starting price is recorded from Pyth oracle.
+              </p>
             </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">2</div>
-              <h3 className="font-semibold mb-1">Bet Early</h3>
-              <p className="text-sm text-gray-400">12h betting window. Earlier bets get up to 1.5x weight bonus!</p>
+            <div className="bg-card rounded-xl border border-border p-6">
+              <div className="text-4xl mb-4">2</div>
+              <h3 className="text-xl font-bold mb-2">Betting Window (12h)</h3>
+              <p className="text-gray-400">
+                Place your bet on LONG or SHORT. Earlier bets get up to 1.5x weight bonus for a bigger share of winnings!
+              </p>
             </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">3</div>
-              <h3 className="font-semibold mb-1">Wait & Watch</h3>
-              <p className="text-sm text-gray-400">After betting closes, 12h wait until price is recorded</p>
+            <div className="bg-card rounded-xl border border-border p-6">
+              <div className="text-4xl mb-4">3</div>
+              <h3 className="text-xl font-bold mb-2">Settlement Period (12h)</h3>
+              <p className="text-gray-400">
+                Betting closes. Wait 12 hours for the final price to be recorded. No more bets can be placed.
+              </p>
             </div>
-            <div className="p-4">
-              <div className="text-3xl mb-2">4</div>
-              <h3 className="font-semibold mb-1">Win the Pool</h3>
-              <p className="text-sm text-gray-400">Winners get bet back + weighted share of losers' pool</p>
+            <div className="bg-card rounded-xl border border-border p-6">
+              <div className="text-4xl mb-4">4</div>
+              <h3 className="text-xl font-bold mb-2">Winner Takes Pool</h3>
+              <p className="text-gray-400">
+                Winners get their original bet back plus a weighted share of the losers' pool. Early birds win more!
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading current round...</p>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="text-center py-12">
-            <p className="text-red-400">Error loading round data</p>
-            <p className="text-gray-500 text-sm mt-2">{String(error)}</p>
-          </div>
-        )}
-
-        {/* No Round State */}
-        {!isLoading && !error && !round && (
-          <div className="text-center py-12 bg-card rounded-xl border border-border">
-            <div className="text-4xl mb-4">🎲</div>
-            <h3 className="text-xl font-bold mb-2">No Active Round</h3>
-            <p className="text-gray-400 mb-4">
-              A new round will start automatically. Check back soon!
+        {/* Early Bird Bonus */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold mb-6 text-center">Early Bird Bonus</h2>
+          <div className="bg-card rounded-xl border border-border p-8">
+            <p className="text-gray-300 text-lg mb-6 text-center">
+              Bet early to increase your share of the winning pool!
             </p>
-            <p className="text-sm text-gray-500">
-              Rounds start every 24 hours with a randomly selected meme token.
-            </p>
-          </div>
-        )}
-
-        {/* Bet Error Display */}
-        {betError && (
-          <div className="mb-4 p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-400 text-center">
-            {betError}
-          </div>
-        )}
-
-        {/* Main Game Area - Only show when round exists */}
-        {round && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* SHORT Betting Card */}
-              <BettingCard
-                side="SHORT"
-                currentPool={round.shortPool}
-                oppositePool={round.longPool}
-                minBet={config?.minBetLamports || defaultConfig.minBetLamports}
-                maxBet={config?.maxBetLamports || defaultConfig.maxBetLamports}
-                feeBps={config?.feeBps || defaultConfig.feeBps}
-                disabled={!connected || round.status !== "Open"}
-                onPlaceBet={handlePlaceBet}
-              />
-
-              {/* Round Info */}
-              <RoundInfo round={round} currentPrice={priceData?.price} />
-
-              {/* LONG Betting Card */}
-              <BettingCard
-                side="LONG"
-                currentPool={round.longPool}
-                oppositePool={round.shortPool}
-                minBet={config?.minBetLamports || defaultConfig.minBetLamports}
-                maxBet={config?.maxBetLamports || defaultConfig.maxBetLamports}
-                feeBps={config?.feeBps || defaultConfig.feeBps}
-                disabled={!connected || round.status !== "Open"}
-                onPlaceBet={handlePlaceBet}
-              />
-            </div>
-
-            {/* Connection prompt */}
-            {!connected && (
-              <div className="mt-8 text-center">
-                <p className="text-gray-400">
-                  Connect your wallet to place bets
-                </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-background rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-400">1.5x</p>
+                <p className="text-sm text-gray-400">Hours 0-3</p>
               </div>
-            )}
-
-            {/* Share Blink Section */}
-            {connected && (
-              <ShareBlink
-                roundId={round.roundId.toNumber()}
-                asset={round.assetSymbol}
-              />
-            )}
-          </>
-        )}
-
-        {/* Recent Activity */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold mb-4">
-            Recent Bets {round && `(${round.betCount} total)`}
-          </h2>
-          <div className="bg-card rounded-xl border border-border p-4">
-            <RecentBets bets={bets || []} isLoading={betsLoading} />
+              <div className="bg-background rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-500">1.3x</p>
+                <p className="text-sm text-gray-400">Hours 3-6</p>
+              </div>
+              <div className="bg-background rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-600">1.15x</p>
+                <p className="text-sm text-gray-400">Hours 6-9</p>
+              </div>
+              <div className="bg-background rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-gray-400">1.0x</p>
+                <p className="text-sm text-gray-400">Hours 9-12</p>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Referrals */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold mb-6 text-center">Earn with Referrals</h2>
+          <div className="bg-card rounded-xl border border-border p-8 text-center">
+            <p className="text-gray-300 text-lg mb-4">
+              Share your referral link and earn <span className="text-long font-bold">1%</span> of every bet placed through it.
+            </p>
+            <p className="text-gray-400">
+              Generate your link by clicking "Get My Link" in the game interface or on any blink.
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center">
+          <a
+            href="/play"
+            className="inline-block bg-long hover:bg-long/80 text-black font-bold py-4 px-10 rounded-lg text-xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+          >
+            Start Playing Now
+          </a>
+          <p className="text-gray-500 mt-4 text-sm">
+            Currently on Solana Devnet
+          </p>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

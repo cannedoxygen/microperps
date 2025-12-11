@@ -27,7 +27,7 @@ export const Header: FC = () => {
 
         <nav className="flex items-center gap-6">
           <a
-            href="/"
+            href="/play"
             className="text-gray-400 hover:text-white transition-colors"
           >
             Play

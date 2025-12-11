@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { useAllRounds } from "@/hooks/useAllRounds";
 import { formatSol } from "@/lib/utils";
 import { Round } from "@/types";
@@ -155,14 +156,14 @@ export default function History() {
   const { data: rounds, isLoading, error } = useAllRounds();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Round History</h1>
           <a
-            href="/"
+            href="/play"
             className="px-4 py-2 bg-card border border-border rounded-lg hover:border-gray-500 transition-colors"
           >
             Back to Game
@@ -201,6 +202,8 @@ export default function History() {
           </div>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

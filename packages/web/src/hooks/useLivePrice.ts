@@ -1,48 +1,67 @@
 import { useQuery } from "@tanstack/react-query";
+import tokensData from "@/data/tokens.json";
 
-// Map token symbols to CoinGecko IDs
-const COINGECKO_IDS: Record<string, string> = {
-  WIF: "dogwifcoin",
-  BONK: "bonk",
-  SOL: "solana",
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  DOGE: "dogecoin",
-  SHIB: "shiba-inu",
-  PEPE: "pepe",
-  FLOKI: "floki",
-  HYPE: "hyperliquid",
-  PUMP: "pump-fun",
-  GIGA: "gigachad-2",
-};
+interface Token {
+  tokenSymbol: string;
+  pythFeedId: string;
+  exponent: number;
+}
+
+// Build mapping from tokens.json
+const PYTH_FEEDS: Record<string, { feedId: string; exponent: number }> = {};
+(tokensData.data as Token[]).forEach((token) => {
+  PYTH_FEEDS[token.tokenSymbol.toUpperCase()] = {
+    feedId: token.pythFeedId,
+    exponent: token.exponent,
+  };
+});
 
 interface PriceData {
   price: number;
   change24h: number;
 }
 
+interface PythPriceResponse {
+  parsed: Array<{
+    price: {
+      price: string;
+      expo: number;
+    };
+  }>;
+}
+
 async function fetchPrice(symbol: string): Promise<PriceData | null> {
-  const coinId = COINGECKO_IDS[symbol.toUpperCase()];
-  if (!coinId) {
-    console.warn(`No CoinGecko ID found for ${symbol}`);
+  const feed = PYTH_FEEDS[symbol.toUpperCase()];
+  if (!feed) {
+    console.warn(`No Pyth feed found for ${symbol}`);
     return null;
   }
 
   try {
+    // Remove 0x prefix if present
+    const feedId = feed.feedId.startsWith("0x") ? feed.feedId.slice(2) : feed.feedId;
+
     const res = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
+      `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${feedId}`
     );
 
     if (!res.ok) {
-      throw new Error(`CoinGecko API error: ${res.status}`);
+      throw new Error(`Pyth API error: ${res.status}`);
     }
 
-    const data = await res.json();
+    const data: PythPriceResponse = await res.json();
 
-    if (data[coinId]) {
+    if (data.parsed && data.parsed.length > 0) {
+      const priceData = data.parsed[0].price;
+      const price = parseInt(priceData.price);
+      const expo = priceData.expo;
+
+      // Convert to USD price
+      const usdPrice = price * Math.pow(10, expo);
+
       return {
-        price: data[coinId].usd,
-        change24h: data[coinId].usd_24h_change || 0,
+        price: usdPrice,
+        change24h: 0, // Pyth doesn't provide 24h change directly
       };
     }
 

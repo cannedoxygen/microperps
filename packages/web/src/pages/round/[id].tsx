@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { RecentBets } from "@/components/RecentBets";
 import { useRoundBets } from "@/hooks/useRoundBets";
 import { useAllRounds } from "@/hooks/useAllRounds";
@@ -202,10 +203,10 @@ export default function RoundPage() {
   const round = rounds?.find((r) => r.roundId.toNumber() === roundId);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="flex justify-between items-center mb-8">
           <a
             href="/history"
@@ -241,6 +242,8 @@ export default function RoundPage() {
         {/* Round Detail */}
         {round && <RoundDetail round={round} />}
       </main>
+
+      <Footer />
     </div>
   );
 }
