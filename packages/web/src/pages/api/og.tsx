@@ -20,7 +20,7 @@ export default async function handler(req: NextRequest) {
 
   const asset = searchParams.get("asset") || "WIF";
   const price = searchParams.get("price") || "0.00";
-  const change = parseFloat(searchParams.get("change") || "0");
+  const startPrice = searchParams.get("startPrice") || price;
   const round = searchParams.get("round") || "1";
   const shortPct = searchParams.get("shortPct") || "50";
   const longPct = searchParams.get("longPct") || "50";
@@ -28,6 +28,10 @@ export default async function handler(req: NextRequest) {
   const longSol = searchParams.get("longSol") || "0.0";
   const timeLeft = searchParams.get("time") || "12h 0m";
 
+  // Calculate change from start price
+  const currentNum = parseFloat(price);
+  const startNum = parseFloat(startPrice);
+  const change = startNum > 0 ? ((currentNum - startNum) / startNum) * 100 : 0;
   const isPositive = change >= 0;
   const changeText = `${isPositive ? "+" : ""}${change.toFixed(2)}%`;
   const tokenImage = tokenImages[asset.toUpperCase()] || tokenImages.WIF;
@@ -119,28 +123,44 @@ export default async function handler(req: NextRequest) {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <span style={{
-                color: "#fff",
-                fontSize: "36px",
-                fontWeight: "800",
-              }}>
-                ${price}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}>
+                  ${startPrice}
+                </span>
+                <span style={{
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "18px",
+                }}>
+                  →
+                </span>
+                <span style={{
+                  color: "#fff",
+                  fontSize: "28px",
+                  fontWeight: "800",
+                }}>
+                  ${price}
+                </span>
+              </div>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 padding: "4px 12px",
                 borderRadius: "16px",
                 background: isPositive ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)",
+                marginTop: "4px",
               }}>
                 <span
                   style={{
                     color: isPositive ? "#4ade80" : "#f87171",
-                    fontSize: "18px",
+                    fontSize: "16px",
                     fontWeight: "700",
                   }}
                 >
-                  {changeText}
+                  {changeText} since round start
                 </span>
               </div>
             </div>
