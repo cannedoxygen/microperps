@@ -6,26 +6,35 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-12 flex-1">
-        {/* Hero */}
-        <div className="text-center mb-16 py-8">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+      {/* Full-screen Hero */}
+      <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-80px)]">
+        <div className="text-center px-4">
+          <h1 className="text-6xl md:text-8xl font-bold mb-6">
             <span className="text-long drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]">μ</span>perps
           </h1>
-          <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-8">
+          <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">
             The simplest way to bet on meme coins.<br />
             Predict if a token goes up or down in 24 hours.
           </p>
 
-          {/* CTA right in hero */}
           <a
             href="/play"
-            className="inline-block bg-long hover:bg-long/80 text-black font-bold py-4 px-10 rounded-lg text-xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+            className="inline-block bg-long hover:bg-long/80 text-black font-bold py-4 px-12 rounded-lg text-xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
           >
             Start Playing
           </a>
-        </div>
 
+          {/* Scroll indicator */}
+          <div className="mt-16 animate-bounce">
+            <svg className="w-6 h-6 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* About Content - Revealed on scroll */}
+      <main className="container mx-auto px-4 py-16">
         {/* What is it */}
         <div className="max-w-4xl mx-auto mb-16">
           <h2 className="text-3xl font-bold mb-6 text-center">What is microperps?</h2>
