@@ -257,7 +257,7 @@ const getActionMetadata = (
           parameters: [
             {
               name: "amount",
-              label: "SOL amount",
+              label: "Amount (SOL)",
               type: "number",
               required: true,
               min: 0.01,
@@ -274,7 +274,7 @@ const getActionMetadata = (
           parameters: [
             {
               name: "amount",
-              label: "SOL amount",
+              label: "Amount (SOL)",
               type: "number",
               required: true,
               min: 0.01,
