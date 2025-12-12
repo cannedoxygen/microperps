@@ -3,6 +3,16 @@ import { Footer } from "@/components/Footer";
 import { useAllRounds } from "@/hooks/useAllRounds";
 import { formatSol } from "@/lib/utils";
 import { Round } from "@/types";
+import tokensData from "@/data/tokens.json";
+
+// Build token images map
+const tokenImages: Record<string, string> = {};
+for (const token of tokensData.data) {
+  tokenImages[token.tokenSymbol.toUpperCase()] = token.tokenImageLogo;
+}
+// Add fallbacks
+tokenImages.SOL = "https://assets.coingecko.com/coins/images/4128/large/solana.png";
+tokenImages.BTC = "https://assets.coingecko.com/coins/images/1/large/bitcoin.png";
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleDateString("en-US", {
@@ -30,10 +40,23 @@ function RoundCard({ round }: { round: Round }) {
   const isActive = !isLegacy && (round.status === "Open" || round.status === "Locked") && !roundEnded;
   const hasNoBets = round.betCount === 0;
 
+  const tokenImage = tokenImages[round.assetSymbol.toUpperCase()];
+
   return (
     <a
       href={`/round/${round.roundId.toString()}`}
-      className="block bg-card rounded-xl border border-border p-6 hover:border-gray-500 transition-colors cursor-pointer">
+      className="block rounded-xl border border-border p-6 hover:border-gray-500 transition-colors cursor-pointer relative overflow-hidden"
+      style={tokenImage ? {
+        backgroundImage: `url(${tokenImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : undefined}
+    >
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/80" />
+
+      {/* Content wrapper */}
+      <div className="relative z-10">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -152,6 +175,7 @@ function RoundCard({ round }: { round: Round }) {
           </span>
         )}
         <span className="text-gray-500">View Details →</span>
+      </div>
       </div>
     </a>
   );
