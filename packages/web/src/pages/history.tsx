@@ -28,6 +28,7 @@ function RoundCard({ round }: { round: Round }) {
   // Check if this is a legacy unsettleable round (old format with no end_time set)
   const isLegacy = round.status === "Open" && round.endTime.toNumber() === 0 && bettingEnded;
   const isActive = !isLegacy && (round.status === "Open" || round.status === "Locked") && !roundEnded;
+  const hasNoBets = round.betCount === 0;
 
   return (
     <a
@@ -46,7 +47,9 @@ function RoundCard({ round }: { round: Round }) {
         </div>
         <div
           className={`px-3 py-1 rounded-full text-sm ${
-            isLegacy
+            hasNoBets && !isActive
+              ? "bg-gray-700 text-gray-300"
+              : isLegacy
               ? "bg-gray-600 text-gray-100"
               : isActive
               ? "bg-green-600 text-green-100"
@@ -57,7 +60,9 @@ function RoundCard({ round }: { round: Round }) {
               : "bg-yellow-600 text-yellow-100"
           }`}
         >
-          {isLegacy
+          {hasNoBets && !isActive
+            ? "No Bets"
+            : isLegacy
             ? "Settled"
             : isActive
             ? "Active"
