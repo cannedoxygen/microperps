@@ -5,6 +5,7 @@ import { BN } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Side } from "@/types";
 import { formatSol, calculatePotentialPayout, classNames } from "@/lib/utils";
+import { BetData } from "@/hooks/useRoundBets";
 
 interface Props {
   side: Side;
@@ -15,6 +16,21 @@ interface Props {
   feeBps: number;
   disabled?: boolean;
   onPlaceBet: (side: Side, amount: BN) => Promise<void>;
+  bets?: BetData[];
+}
+
+function formatAddress(address: string): string {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
+function formatTimeAgo(timestamp: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - timestamp;
+
+  if (diff < 60) return "now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
 }
 
 export const BettingCard: FC<Props> = ({
@@ -26,6 +42,7 @@ export const BettingCard: FC<Props> = ({
   feeBps,
   disabled = false,
   onPlaceBet,
+  bets = [],
 }) => {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -146,6 +163,36 @@ export const BettingCard: FC<Props> = ({
       >
         {isLoading ? "Placing..." : `Go ${isShort ? "SHORT" : "LONG"}`}
       </button>
+
+      {/* Bets list */}
+      {bets.length > 0 && (
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+          <p className="text-xs text-gray-500 mb-2">{bets.length} bet{bets.length !== 1 ? "s" : ""}</p>
+          <div className="max-h-32 sm:max-h-40 overflow-y-auto space-y-2 scrollbar-thin">
+            {bets.map((bet) => (
+              <div
+                key={`${bet.roundId}-${bet.betIndex}`}
+                className="flex items-center justify-between text-xs sm:text-sm bg-background/50 rounded px-2 py-1.5"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <a
+                    href={`https://explorer.solana.com/address/${bet.bettor}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-gray-400 hover:text-blue-400 truncate"
+                  >
+                    {formatAddress(bet.bettor)}
+                  </a>
+                  <span className="text-gray-600">{formatTimeAgo(bet.betTime)}</span>
+                </div>
+                <span className="font-mono font-semibold whitespace-nowrap ml-2">
+                  {bet.originalAmount.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,12 +1,12 @@
 import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoundInfo } from "@/components/RoundInfo";
 import { BettingCard } from "@/components/BettingCard";
 import { ShareBlink } from "@/components/ShareBlink";
-import { RecentBets } from "@/components/RecentBets";
 import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useLivePrice } from "@/hooks/useLivePrice";
@@ -40,9 +40,19 @@ export default function Home() {
   const { data: priceData } = useLivePrice(round?.assetSymbol);
 
   // Fetch bets for the current round
-  const { data: bets, isLoading: betsLoading } = useRoundBets(
+  const { data: bets } = useRoundBets(
     round?.roundId.toNumber(),
     round?.betCount
+  );
+
+  // Filter bets by side
+  const shortBets = useMemo(() =>
+    (bets || []).filter(bet => bet.side === "SHORT"),
+    [bets]
+  );
+  const longBets = useMemo(() =>
+    (bets || []).filter(bet => bet.side === "LONG"),
+    [bets]
   );
 
   const handlePlaceBet = async (side: Side, amount: BN) => {
@@ -128,6 +138,7 @@ export default function Home() {
                 feeBps={config?.feeBps || defaultConfig.feeBps}
                 disabled={!connected || round.status !== "Open"}
                 onPlaceBet={handlePlaceBet}
+                bets={shortBets}
               />
 
               {/* Round Info - hidden on mobile, shows in middle on desktop */}
@@ -149,6 +160,7 @@ export default function Home() {
                 feeBps={config?.feeBps || defaultConfig.feeBps}
                 disabled={!connected || round.status !== "Open"}
                 onPlaceBet={handlePlaceBet}
+                bets={longBets}
               />
             </div>
 
@@ -171,15 +183,6 @@ export default function Home() {
           </>
         )}
 
-        {/* Recent Activity */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold mb-4">
-            Recent Bets {round && `(${round.betCount} total)`}
-          </h2>
-          <div className="bg-card rounded-xl border border-border p-4">
-            <RecentBets bets={bets || []} isLoading={betsLoading} />
-          </div>
-        </div>
       </main>
 
       <Footer />
