@@ -1,12 +1,13 @@
 import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RoundInfo } from "@/components/RoundInfo";
 import { BettingCard } from "@/components/BettingCard";
 import { ShareBlink } from "@/components/ShareBlink";
+import { BetAnimation } from "@/components/BetAnimation";
 import { useCurrentRound } from "@/hooks/useCurrentRound";
 import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useLivePrice } from "@/hooks/useLivePrice";
@@ -55,6 +56,13 @@ export default function Home() {
     [bets]
   );
 
+  // Animation state
+  const [showAnimation, setShowAnimation] = useState<"LONG" | "SHORT" | null>(null);
+
+  const handleAnimationComplete = useCallback(() => {
+    setShowAnimation(null);
+  }, []);
+
   const handlePlaceBet = async (side: Side, amount: BN) => {
     if (!round) return;
 
@@ -64,13 +72,26 @@ export default function Home() {
     const result = await placeBet(roundId, side, amount);
 
     if (result?.success) {
+      // Trigger animation
+      setShowAnimation(side);
       // Invalidate query to refresh round data
       queryClient.invalidateQueries({ queryKey: ["currentRound"] });
     }
   };
 
+  const tokenImage = round ? TOKEN_IMAGES[round.assetSymbol.toUpperCase()] : undefined;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Bet Animation Overlay */}
+      {showAnimation && (
+        <BetAnimation
+          side={showAnimation}
+          tokenImage={tokenImage}
+          onComplete={handleAnimationComplete}
+        />
+      )}
+
       <Header />
 
       <main className="container mx-auto px-4 py-8 flex-1">
@@ -122,7 +143,7 @@ export default function Home() {
               <RoundInfo
                 round={round}
                 currentPrice={priceData?.price}
-                tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
+                tokenImage={tokenImage}
               />
             </div>
 
@@ -146,7 +167,7 @@ export default function Home() {
                 <RoundInfo
                   round={round}
                   currentPrice={priceData?.price}
-                  tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
+                  tokenImage={tokenImage}
                 />
               </div>
 
@@ -178,7 +199,7 @@ export default function Home() {
               <ShareBlink
                 roundId={round.roundId.toNumber()}
                 asset={round.assetSymbol}
-                tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
+                tokenImage={tokenImage}
               />
             )}
           </>
