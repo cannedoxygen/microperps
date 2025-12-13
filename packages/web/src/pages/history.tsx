@@ -45,7 +45,7 @@ function RoundCard({ round }: { round: Round }) {
   return (
     <a
       href={`/round/${round.roundId.toString()}`}
-      className="block rounded-xl border border-border p-6 hover:border-gray-500 transition-colors cursor-pointer relative overflow-hidden"
+      className="block rounded-xl border border-border p-4 sm:p-6 hover:border-gray-500 transition-colors cursor-pointer relative overflow-hidden"
       style={tokenImage ? {
         backgroundImage: `url(${tokenImage})`,
         backgroundSize: 'cover',
@@ -58,18 +58,18 @@ function RoundCard({ round }: { round: Round }) {
       {/* Content wrapper */}
       <div className="relative z-10">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-3 sm:mb-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h3 className="text-2xl font-bold">{round.assetSymbol}</h3>
-            <span className="text-gray-500">Round #{round.roundId.toString()}</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h3 className="text-xl sm:text-2xl font-bold">{round.assetSymbol}</h3>
+            <span className="text-gray-500 text-xs sm:text-base">#{round.roundId.toString()}</span>
           </div>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-400">
             {formatDate(round.startTime.toNumber())}
           </p>
         </div>
         <div
-          className={`px-3 py-1 rounded-full text-sm ${
+          className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${
             hasNoBets && !isActive
               ? "bg-gray-700 text-gray-300"
               : isLegacy
@@ -98,21 +98,21 @@ function RoundCard({ round }: { round: Round }) {
       </div>
 
       {/* Price Info */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-4">
         <div>
-          <span className="text-xs text-gray-500">Start Price</span>
-          <p className="font-mono">${startPrice.toFixed(6)}</p>
+          <span className="text-[10px] sm:text-xs text-gray-500">Start</span>
+          <p className="font-mono text-xs sm:text-base">${startPrice.toFixed(4)}</p>
         </div>
         <div>
-          <span className="text-xs text-gray-500">End Price</span>
-          <p className="font-mono">
-            {isSettled && endPrice > 0 ? `$${endPrice.toFixed(6)}` : "—"}
+          <span className="text-[10px] sm:text-xs text-gray-500">End</span>
+          <p className="font-mono text-xs sm:text-base">
+            {isSettled && endPrice > 0 ? `$${endPrice.toFixed(4)}` : "—"}
           </p>
         </div>
         <div>
-          <span className="text-xs text-gray-500">Change</span>
+          <span className="text-[10px] sm:text-xs text-gray-500">Change</span>
           <p
-            className={`font-mono ${
+            className={`font-mono text-xs sm:text-base ${
               priceChange > 0
                 ? "text-long"
                 : priceChange < 0
@@ -128,8 +128,8 @@ function RoundCard({ round }: { round: Round }) {
       </div>
 
       {/* Pool Distribution */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm mb-2">
+      <div className="mb-3 sm:mb-4">
+        <div className="flex justify-between text-xs sm:text-sm mb-2">
           <span className="text-short">
             SHORT ({round.betCount > 0 ? ((round.shortPool.toNumber() / totalPool.toNumber()) * 100).toFixed(0) : 50}%)
           </span>
@@ -137,7 +137,7 @@ function RoundCard({ round }: { round: Round }) {
             LONG ({round.betCount > 0 ? ((round.longPool.toNumber() / totalPool.toNumber()) * 100).toFixed(0) : 50}%)
           </span>
         </div>
-        <div className="h-3 bg-background rounded-full overflow-hidden flex">
+        <div className="h-2 sm:h-3 bg-background rounded-full overflow-hidden flex">
           <div
             className={`h-full ${round.winningSide === "SHORT" ? "bg-short" : "bg-short/50"}`}
             style={{
@@ -159,22 +159,23 @@ function RoundCard({ round }: { round: Round }) {
             }}
           />
         </div>
-        <div className="flex justify-between text-xs mt-1 text-gray-500">
-          <span>{formatSol(round.shortPool)} SOL</span>
-          <span>Total: {formatSol(totalPool)} SOL</span>
-          <span>{formatSol(round.longPool)} SOL</span>
+        <div className="flex justify-between text-[10px] sm:text-xs mt-1 text-gray-500">
+          <span>{formatSol(round.shortPool)}</span>
+          <span>{formatSol(totalPool)} SOL</span>
+          <span>{formatSol(round.longPool)}</span>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="flex justify-between text-sm text-gray-400">
+      <div className="flex justify-between text-xs sm:text-sm text-gray-400">
         <span>{round.betCount} bets</span>
         {isSettled && round.winningSide && (
           <span className={round.winningSide === "LONG" ? "text-long" : "text-short"}>
-            {round.winningSide === "LONG" ? "Price went UP" : "Price went DOWN"}
+            {round.winningSide === "LONG" ? "UP" : "DOWN"}
           </span>
         )}
-        <span className="text-gray-500">View Details →</span>
+        <span className="text-gray-500 hidden sm:inline">View Details →</span>
+        <span className="text-gray-500 sm:hidden">→</span>
       </div>
       </div>
     </a>
@@ -188,14 +189,14 @@ export default function History() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 flex-1">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Round History</h1>
+      <main className="container mx-auto px-4 py-6 sm:py-8 flex-1">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">History</h1>
           <a
             href="/play"
-            className="px-4 py-2 bg-card border border-border rounded-lg hover:border-gray-500 transition-colors"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-card border border-border rounded-lg hover:border-gray-500 transition-colors"
           >
-            Back to Game
+            Back
           </a>
         </div>
 

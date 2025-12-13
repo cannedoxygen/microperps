@@ -104,7 +104,20 @@ export default function Home() {
         {/* Main Game Area - Only show when round exists */}
         {round && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Mobile: RoundInfo first, then betting cards */}
+            {/* Desktop: 3-column grid with SHORT | RoundInfo | LONG */}
+
+            {/* RoundInfo - shows first on mobile */}
+            <div className="lg:hidden mb-6">
+              <RoundInfo
+                round={round}
+                currentPrice={priceData?.price}
+                tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
+              />
+            </div>
+
+            {/* Betting cards - 2 columns on mobile, part of 3-col grid on desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
               {/* SHORT Betting Card */}
               <BettingCard
                 side="SHORT"
@@ -117,12 +130,14 @@ export default function Home() {
                 onPlaceBet={handlePlaceBet}
               />
 
-              {/* Round Info */}
-              <RoundInfo
-                round={round}
-                currentPrice={priceData?.price}
-                tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
-              />
+              {/* Round Info - hidden on mobile, shows in middle on desktop */}
+              <div className="hidden lg:block">
+                <RoundInfo
+                  round={round}
+                  currentPrice={priceData?.price}
+                  tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
+                />
+              </div>
 
               {/* LONG Betting Card */}
               <BettingCard

@@ -629,37 +629,56 @@ export default async function handler(
     const token = await pickRandomToken(connection, currentRoundId);
     console.log(`Selected token: ${token.tokenSymbol} (${token.tokenName})`);
 
-    // Settle previous round if exists (fetches the correct token's price)
-    let settlementTweetId: string | null = null;
+    // Settle any unsettled past rounds (not just the previous one)
+    // This handles cases where settlement failed in previous cron runs
     if (currentRoundId > 0) {
-      const prevRoundId = currentRoundId - 1;
-      const settled = await settlePreviousRound(connection, admin, prevRoundId);
+      // Check last 5 rounds for any that need settling
+      const roundsToCheck = Math.min(currentRoundId, 5);
+      for (let i = 1; i <= roundsToCheck; i++) {
+        const roundIdToSettle = currentRoundId - i;
+        const roundInfo = await getRoundInfo(connection, roundIdToSettle);
 
-      // If settled successfully, process all payouts
-      if (settled) {
-        const payoutsProcessed = await processPayouts(connection, admin, prevRoundId);
+        // Skip if round doesn't exist or is already settled (status 3)
+        if (!roundInfo || roundInfo.status === 3) {
+          continue;
+        }
 
-        // Get full round data for settlement tweet
-        const fullRoundInfo = await getFullRoundInfo(connection, prevRoundId);
-        if (fullRoundInfo && fullRoundInfo.winningSide) {
-          // Tweet settlement (non-blocking - don't await)
-          tweetRoundSettled(
-            prevRoundId,
-            fullRoundInfo.assetSymbol,
-            fullRoundInfo.startPrice,
-            fullRoundInfo.endPrice,
-            fullRoundInfo.winningSide,
-            fullRoundInfo.leftPool + fullRoundInfo.rightPool,
-            payoutsProcessed
-          )
-            .then((tweetId) => {
-              if (tweetId) {
-                console.log(`[Twitter] Settlement tweet posted: ${tweetId}`);
-              }
-            })
-            .catch((err) => {
-              console.error("[Twitter] Failed to post settlement tweet:", err);
-            });
+        // Only settle if status is Open (0) or Locked (1) - not Settling (2)
+        if (roundInfo.status === 0 || roundInfo.status === 1) {
+          console.log(`Found unsettled round ${roundIdToSettle} (status=${roundInfo.status}), attempting to settle...`);
+          const settled = await settlePreviousRound(connection, admin, roundIdToSettle);
+
+          // If settled successfully, process all payouts
+          if (settled) {
+            const payoutsProcessed = await processPayouts(connection, admin, roundIdToSettle);
+
+            // Get full round data for settlement tweet
+            const fullRoundInfo = await getFullRoundInfo(connection, roundIdToSettle);
+            if (fullRoundInfo && fullRoundInfo.winningSide) {
+              // Tweet settlement (non-blocking - don't await)
+              tweetRoundSettled(
+                roundIdToSettle,
+                fullRoundInfo.assetSymbol,
+                fullRoundInfo.startPrice,
+                fullRoundInfo.endPrice,
+                fullRoundInfo.winningSide,
+                fullRoundInfo.leftPool + fullRoundInfo.rightPool,
+                payoutsProcessed
+              )
+                .then((tweetId) => {
+                  if (tweetId) {
+                    console.log(`[Twitter] Settlement tweet posted for round ${roundIdToSettle}: ${tweetId}`);
+                  }
+                })
+                .catch((err) => {
+                  console.error(`[Twitter] Failed to post settlement tweet for round ${roundIdToSettle}:`, err);
+                });
+            }
+          }
+        } else if (roundInfo.status === 2) {
+          // Round is in Settling status - process remaining payouts
+          console.log(`Round ${roundIdToSettle} is in Settling status, processing payouts...`);
+          await processPayouts(connection, admin, roundIdToSettle);
         }
       }
     }

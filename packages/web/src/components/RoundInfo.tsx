@@ -54,7 +54,7 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
 
   return (
     <div
-      className="bg-card rounded-xl p-6 border border-border relative overflow-hidden"
+      className="bg-card rounded-xl p-4 sm:p-6 border border-border relative overflow-hidden"
       style={tokenImage ? {
         backgroundImage: `url(${tokenImage})`,
         backgroundSize: 'cover',
@@ -68,13 +68,13 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
       {/* Content wrapper with relative positioning to stay above overlay */}
       <div className={tokenImage ? "relative z-10" : ""}>
       {/* Asset and Round Info */}
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-4 sm:mb-6">
         <div>
-          <h2 className="text-3xl font-bold">{round.assetSymbol}</h2>
-          <p className="text-gray-400">Round #{round.roundId.toString()}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold">{round.assetSymbol}</h2>
+          <p className="text-gray-400 text-sm sm:text-base">Round #{round.roundId.toString()}</p>
         </div>
         <div
-          className={`px-3 py-1 rounded-full text-sm ${
+          className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm ${
             isEnded
               ? "bg-gray-700 text-gray-300"
               : isBettingClosed
@@ -82,26 +82,26 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
               : "bg-green-600 text-green-100"
           }`}
         >
-          {isEnded ? "Settling" : isBettingClosed ? "Betting Closed" : "Betting Open"}
+          {isEnded ? "Settling" : isBettingClosed ? "Closed" : "Open"}
         </div>
       </div>
 
       {/* Price Display */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <span className="text-sm text-gray-400">Start Price</span>
-          <p className="text-xl font-mono">${startPrice.toFixed(6)}</p>
+          <span className="text-xs sm:text-sm text-gray-400">Start Price</span>
+          <p className="text-sm sm:text-xl font-mono">${startPrice.toFixed(6)}</p>
         </div>
         <div>
-          <span className="text-sm text-gray-400">Current Price</span>
+          <span className="text-xs sm:text-sm text-gray-400">Current Price</span>
           <p
-            className={`text-xl font-mono ${
+            className={`text-sm sm:text-xl font-mono ${
               isUp ? "text-long" : "text-short"
             }`}
           >
             ${currentPrice?.toFixed(6) ?? "—"}
             {currentPrice && (
-              <span className="text-sm ml-2">
+              <span className="text-xs sm:text-sm ml-1 sm:ml-2">
                 ({isUp ? "+" : ""}
                 {priceChange.toFixed(2)}%)
               </span>
@@ -111,20 +111,20 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
       </div>
 
       {/* Countdown and Weight Tier */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4 sm:mb-6">
         {!isBettingClosed ? (
           <>
-            <span className="text-sm text-gray-400">Betting Closes In</span>
-            <p className="countdown-digit">{formatCountdown(bettingTimeRemaining)}</p>
+            <span className="text-xs sm:text-sm text-gray-400">Betting Closes In</span>
+            <p className="countdown-digit text-2xl sm:text-4xl">{formatCountdown(bettingTimeRemaining)}</p>
             {/* Current Weight Tier */}
-            <div className="mt-3 p-3 bg-background rounded-lg">
-              <span className="text-sm text-gray-400">Current Early Bird Bonus</span>
-              <p className="text-2xl font-bold text-green-400">{currentWeightTier.label}</p>
-              <div className="flex justify-center gap-2 mt-2">
+            <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-background rounded-lg">
+              <span className="text-xs sm:text-sm text-gray-400">Early Bird Bonus</span>
+              <p className="text-xl sm:text-2xl font-bold text-green-400">{currentWeightTier.label}</p>
+              <div className="flex justify-center gap-1 sm:gap-2 mt-2">
                 {WEIGHT_TIERS.map((tier, idx) => (
                   <div
                     key={tier.hours}
-                    className={`px-2 py-1 rounded text-xs ${
+                    className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs ${
                       idx === currentWeightTier.tierIndex
                         ? "bg-green-600 text-white"
                         : idx < currentWeightTier.tierIndex
@@ -136,16 +136,16 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Bet earlier for a bigger share of the winning pool!
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
+                Bet earlier for a bigger share!
               </p>
             </div>
           </>
         ) : (
           <>
-            <span className="text-sm text-gray-400">Settlement In</span>
-            <p className="countdown-digit">{formatCountdown(settlementTimeRemaining)}</p>
-            <p className="text-yellow-400 text-sm mt-1">
+            <span className="text-xs sm:text-sm text-gray-400">Settlement In</span>
+            <p className="countdown-digit text-2xl sm:text-4xl">{formatCountdown(settlementTimeRemaining)}</p>
+            <p className="text-yellow-400 text-xs sm:text-sm mt-1">
               Waiting for price to be recorded...
             </p>
           </>
@@ -153,12 +153,12 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
       </div>
 
       {/* Pool Distribution */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-short">🔴 SHORT ({(odds.short * 100).toFixed(1)}%)</span>
-          <span className="text-long">🟢 LONG ({(odds.long * 100).toFixed(1)}%)</span>
+      <div className="mb-3 sm:mb-4">
+        <div className="flex justify-between text-xs sm:text-sm mb-2">
+          <span className="text-short">🔴 SHORT ({(odds.short * 100).toFixed(0)}%)</span>
+          <span className="text-long">🟢 LONG ({(odds.long * 100).toFixed(0)}%)</span>
         </div>
-        <div className="h-4 bg-background rounded-full overflow-hidden flex">
+        <div className="h-3 sm:h-4 bg-background rounded-full overflow-hidden flex">
           <div
             className="pool-bar bg-short h-full"
             style={{ width: `${odds.short * 100}%` }}
@@ -168,20 +168,20 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
             style={{ width: `${odds.long * 100}%` }}
           />
         </div>
-        <div className="flex justify-between text-sm mt-2 text-gray-400">
-          <span>{formatSol(round.shortPool)} SOL</span>
-          <span>Total: {formatSol(totalPool)} SOL</span>
-          <span>{formatSol(round.longPool)} SOL</span>
+        <div className="flex justify-between text-[10px] sm:text-sm mt-1 sm:mt-2 text-gray-400">
+          <span>{formatSol(round.shortPool)}</span>
+          <span>{formatSol(totalPool)} SOL</span>
+          <span>{formatSol(round.longPool)}</span>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="bg-background rounded-lg p-3">
-          <span className="text-gray-400">Total Bets</span>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+        <div className="bg-background rounded-lg p-2 sm:p-3">
+          <span className="text-gray-400">Bets</span>
           <p className="font-mono">{round.betCount}</p>
         </div>
-        <div className="bg-background rounded-lg p-3">
+        <div className="bg-background rounded-lg p-2 sm:p-3">
           <span className="text-gray-400">Status</span>
           <p className="capitalize">{round.status}</p>
         </div>

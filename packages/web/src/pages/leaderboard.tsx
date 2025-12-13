@@ -106,17 +106,17 @@ export default function Leaderboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 flex-1">
-        <div className="flex justify-between items-center mb-8">
+      <main className="container mx-auto px-4 py-6 sm:py-8 flex-1">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Leaderboard</h1>
-            <p className="text-gray-400 mt-1">Top performers by profit</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Leaderboard</h1>
+            <p className="text-gray-400 mt-1 text-sm sm:text-base">Top performers</p>
           </div>
           <a
             href="/play"
-            className="px-4 py-2 bg-card border border-border rounded-lg hover:border-gray-500 transition-colors"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-card border border-border rounded-lg hover:border-gray-500 transition-colors"
           >
-            Back to Game
+            Back
           </a>
         </div>
 
@@ -206,11 +206,11 @@ export default function Leaderboard() {
         )}
 
         {/* Referral Leaderboard */}
-        <div className="mt-16">
-          <div className="flex justify-between items-center mb-8">
+        <div className="mt-12 sm:mt-16">
+          <div className="flex justify-between items-center mb-6 sm:mb-8">
             <div>
-              <h2 className="text-3xl font-bold">Referral Leaderboard</h2>
-              <p className="text-gray-400 mt-1">Top referrers by volume</p>
+              <h2 className="text-2xl sm:text-3xl font-bold">Referrals</h2>
+              <p className="text-gray-400 mt-1 text-sm sm:text-base">Top referrers</p>
             </div>
           </div>
 

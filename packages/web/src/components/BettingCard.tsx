@@ -62,34 +62,34 @@ export const BettingCard: FC<Props> = ({
   return (
     <div
       className={classNames(
-        "bet-card rounded-xl border-2 p-6 bg-card",
+        "bet-card rounded-xl border-2 p-4 sm:p-6 bg-card",
         isShort ? "bet-card-short" : "bet-card-long"
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
         <h3
           className={classNames(
-            "text-2xl font-bold",
+            "text-lg sm:text-2xl font-bold",
             isShort ? "text-short" : "text-long"
           )}
         >
           {isShort ? "🔴 SHORT" : "🟢 LONG"}
         </h3>
-        <span className="text-sm text-gray-400">
+        <span className="text-xs sm:text-sm text-gray-400">
           {isShort ? "Price goes DOWN" : "Price goes UP"}
         </span>
       </div>
 
       {/* Pool display */}
-      <div className="mb-4">
-        <span className="text-sm text-gray-400">Pool</span>
-        <p className="text-xl font-mono">{formatSol(currentPool)} SOL</p>
+      <div className="mb-3 sm:mb-4">
+        <span className="text-xs sm:text-sm text-gray-400">Pool</span>
+        <p className="text-base sm:text-xl font-mono">{formatSol(currentPool)} SOL</p>
       </div>
 
       {/* Amount input */}
-      <div className="mb-4">
-        <label className="text-sm text-gray-400 mb-2 block">Bet Amount</label>
+      <div className="mb-3 sm:mb-4">
+        <label className="text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2 block">Bet Amount</label>
         <div className="relative">
           <input
             type="number"
@@ -100,33 +100,33 @@ export const BettingCard: FC<Props> = ({
             max={formatSol(maxBet)}
             step="0.01"
             disabled={disabled || isLoading}
-            className="w-full bg-background border border-border rounded-lg px-4 py-3 text-lg font-mono focus:outline-none focus:border-gray-500 disabled:opacity-50"
+            className="w-full bg-background border border-border rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-base sm:text-lg font-mono focus:outline-none focus:border-gray-500 disabled:opacity-50"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <span className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
             SOL
           </span>
         </div>
       </div>
 
       {/* Preset amounts */}
-      <div className="flex gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:flex gap-1 sm:gap-2 mb-3 sm:mb-4">
         {presetAmounts.map((preset) => (
           <button
             key={preset}
             onClick={() => setAmount(preset.toString())}
             disabled={disabled || isLoading}
-            className="flex-1 py-2 text-sm border border-border rounded hover:bg-border transition-colors disabled:opacity-50"
+            className="sm:flex-1 py-1.5 sm:py-2 text-xs sm:text-sm border border-border rounded hover:bg-border transition-colors disabled:opacity-50"
           >
-            {preset} SOL
+            {preset}
           </button>
         ))}
       </div>
 
       {/* Potential payout */}
       {amountBN.gt(new BN(0)) && (
-        <div className="mb-4 p-3 bg-background rounded-lg">
-          <span className="text-sm text-gray-400">Potential Payout</span>
-          <p className="text-lg font-mono text-green-400">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-background rounded-lg">
+          <span className="text-xs sm:text-sm text-gray-400">Potential Payout</span>
+          <p className="text-base sm:text-lg font-mono text-green-400">
             {formatSol(potentialPayout)} SOL
           </p>
         </div>
@@ -137,14 +137,14 @@ export const BettingCard: FC<Props> = ({
         onClick={handleSubmit}
         disabled={disabled || isLoading || !amount}
         className={classNames(
-          "w-full py-4 rounded-lg font-bold text-lg transition-all",
+          "w-full py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all",
           isShort
             ? "bg-short hover:bg-short-dark disabled:bg-short/30"
             : "bg-long hover:bg-long-dark disabled:bg-long/30",
           "disabled:cursor-not-allowed"
         )}
       >
-        {isLoading ? "Placing Bet..." : `Go ${isShort ? "SHORT" : "LONG"}`}
+        {isLoading ? "Placing..." : `Go ${isShort ? "SHORT" : "LONG"}`}
       </button>
     </div>
   );
