@@ -178,6 +178,7 @@ export default function Home() {
               <ShareBlink
                 roundId={round.roundId.toNumber()}
                 asset={round.assetSymbol}
+                tokenImage={TOKEN_IMAGES[round.assetSymbol.toUpperCase()]}
               />
             )}
           </>
