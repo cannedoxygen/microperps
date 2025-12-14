@@ -183,7 +183,7 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
         </div>
         <div className="bg-background rounded-lg p-2 sm:p-3">
           <span className="text-gray-400">Status</span>
-          <p className="capitalize">{round.status}</p>
+          <p className="capitalize">{isEnded ? "Settling" : isBettingClosed ? "Closed" : "Open"}</p>
         </div>
       </div>
       </div>
