@@ -82,7 +82,7 @@ export const RoundInfo: FC<Props> = ({ round, currentPrice, tokenImage }) => {
               : "bg-green-600 text-green-100"
           }`}
         >
-          {isEnded ? "Settling" : isBettingClosed ? "Closed" : "Open"}
+          {isEnded ? "Settling" : isBettingClosed ? "Betting Closed" : "Betting Open"}
         </div>
       </div>
 
