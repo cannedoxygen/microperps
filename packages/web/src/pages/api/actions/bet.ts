@@ -133,9 +133,7 @@ async function getRoundData(roundId: number): Promise<RoundData | null> {
     console.log("Round account data length:", roundAccount.data.length);
 
     // Parse round account data (Anchor account structure)
-    // Supports both old (90 bytes) and new (114 bytes) layouts
     const data = roundAccount.data;
-    const isNewLayout = data.length > 100;
     let offset = 8; // Skip discriminator
 
     // round_id: u64
@@ -157,21 +155,13 @@ async function getRoundData(roundId: number): Promise<RoundData | null> {
     // start_time: i64
     offset += 8; // skip start_time
 
-    // betting_end_time: i64 (NEW - only in new layout)
-    let bettingEndTime: number;
-    if (isNewLayout) {
-      bettingEndTime = Number(data.readBigInt64LE(offset));
-      offset += 8;
-    }
+    // betting_end_time: i64 - always present
+    const bettingEndTime = Number(data.readBigInt64LE(offset));
+    offset += 8;
 
     // end_time: i64
     const endTime = Number(data.readBigInt64LE(offset));
     offset += 8;
-
-    // For old layout, betting_end_time = end_time
-    if (!isNewLayout) {
-      bettingEndTime = endTime;
-    }
 
     // status: enum (1 byte)
     const status = data.readUInt8(offset);
@@ -186,11 +176,9 @@ async function getRoundData(roundId: number): Promise<RoundData | null> {
     const rightPool = Number(data.readBigUInt64LE(offset)) / LAMPORTS_PER_SOL;
     offset += 8;
 
-    // Skip weighted pools in new layout
-    if (isNewLayout) {
-      offset += 8; // left_weighted_pool
-      offset += 8; // right_weighted_pool
-    }
+    // Skip weighted pools - always present
+    offset += 8; // left_weighted_pool
+    offset += 8; // right_weighted_pool
 
     // Get token info
     const token = TOKENS[assetSymbol] || TOKENS.WIF;

@@ -125,27 +125,12 @@ function decodeRound(data: Buffer): Round {
   const startTime = new BN(data.slice(offset, offset + 8), "le");
   offset += 8;
 
-  // Check if this is new layout (has betting_end_time and weighted pools)
-  // Old layout: ~90 bytes, New layout: ~114 bytes (depends on symbol length)
-  const isNewLayout = data.length > 100;
-
-  let bettingEndTime: BN;
-  if (isNewLayout) {
-    bettingEndTime = new BN(data.slice(offset, offset + 8), "le");
-    offset += 8;
-  } else {
-    // Old layout: betting_end_time = end_time (betting goes until end)
-    // We'll set it after reading end_time
-    bettingEndTime = new BN(0);
-  }
+  // betting_end_time is always present in the struct
+  const bettingEndTime = new BN(data.slice(offset, offset + 8), "le");
+  offset += 8;
 
   const endTime = new BN(data.slice(offset, offset + 8), "le");
   offset += 8;
-
-  // For old layout, set bettingEndTime = endTime (old behavior)
-  if (!isNewLayout) {
-    bettingEndTime = endTime;
-  }
 
   const statusByte = data[offset];
   offset += 1;
@@ -165,19 +150,11 @@ function decodeRound(data: Buffer): Round {
   const longPool = new BN(data.slice(offset, offset + 8), "le");
   offset += 8;
 
-  // Weighted pools for payout calculation (only in new layout)
-  let shortWeightedPool: BN;
-  let longWeightedPool: BN;
-  if (isNewLayout) {
-    shortWeightedPool = new BN(data.slice(offset, offset + 8), "le");
-    offset += 8;
-    longWeightedPool = new BN(data.slice(offset, offset + 8), "le");
-    offset += 8;
-  } else {
-    // Old layout: weighted pools equal regular pools (1:1 weight)
-    shortWeightedPool = shortPool;
-    longWeightedPool = longPool;
-  }
+  // Weighted pools for payout calculation - always present
+  const shortWeightedPool = new BN(data.slice(offset, offset + 8), "le");
+  offset += 8;
+  const longWeightedPool = new BN(data.slice(offset, offset + 8), "le");
+  offset += 8;
 
   const betCount = data.readUInt32LE(offset);
   offset += 4;
