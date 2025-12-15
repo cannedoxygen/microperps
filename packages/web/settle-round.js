@@ -1,5 +1,6 @@
 const { Connection, Keypair, PublicKey, Transaction, TransactionInstruction, sendAndConfirmTransaction } = require('@solana/web3.js');
 const { BN } = require('@coral-xyz/anchor');
+const tokensData = require('./src/data/tokens.json');
 
 // Load env
 require('dotenv').config({ path: '.env.local' });
@@ -10,14 +11,14 @@ const CONFIG_PDA = new PublicKey(process.env.NEXT_PUBLIC_CONFIG_PDA || 'DQ6T8gLK
 // Settle round discriminator (from new-round.ts)
 const SETTLE_ROUND_DISCRIMINATOR = Buffer.from([40, 101, 18, 1, 31, 129, 52, 77]);
 
-// Token Pyth feed IDs
-const PYTH_FEEDS = {
-  'JUP': '0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996',
-  'POPCAT': 'b9312a7ee50e189ef045aa3382fa20a09ffb70ee2b0a70f4320df55f3836a8c4',
-  'WIF': '4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc',
-  'BONK': '72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419',
-  'MNDE': '3607bf4d7b78666bd3736c7aacaf2fd2bc56caa8667d3224971ebe3c0623292a',
-};
+// Build Pyth feeds from tokens.json
+const PYTH_FEEDS = {};
+tokensData.data.forEach(token => {
+  const symbol = token.tokenSymbol.toUpperCase();
+  // Remove 0x prefix if present
+  const feedId = token.pythFeedId.startsWith('0x') ? token.pythFeedId.slice(2) : token.pythFeedId;
+  PYTH_FEEDS[symbol] = feedId;
+});
 
 async function settleRound(roundId) {
   const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com', 'confirmed');

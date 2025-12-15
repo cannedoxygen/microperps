@@ -1,7 +1,7 @@
 {
   "rules": [
     {
-      "pathPattern": "/api/actions/bet**",
+      "pathPattern": "/api/actions/bet/**",
       "apiPath": "/api/actions/bet"
     }
   ]
