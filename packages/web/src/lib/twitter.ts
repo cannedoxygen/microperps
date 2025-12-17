@@ -5,6 +5,57 @@ import { TwitterApi } from "twitter-api-v2";
  * Posts blinks for round starts and settlement results
  */
 
+// Token Twitter handles - tag them in tweets for visibility
+const TOKEN_TWITTER_HANDLES: Record<string, string> = {
+  // Meme coins
+  BONK: "@bonk_inu",
+  WIF: "@dogwifcoin",
+  POPCAT: "@Popcatsolana",
+  PNUT: "@paborbs",
+  BOME: "@darkaborbs",
+  MEW: "@MewsWorld",
+  PONKE: "@ponaborbs",
+  MOODENG: "@Maborbs",
+  NEIRO: "@Neaborbs",
+  CHILLGUY: "@chaborbs",
+  GOAT: "@goaborbs",
+  FARTCOIN: "@faborbs",
+  WEN: "@waborbs",
+  WOJAK: "@wojaborbs",
+  GIGA: "@gigaborbs",
+  GRIFFAIN: "@griffaindotcom",
+  ZEREBRO: "@0xzerebro",
+  SKI: "@saborbs",
+
+  // AI tokens
+  AI16Z: "@ai16zdao",
+  ACT: "@ACT_TheAIProphe",
+
+  // DeFi / Infrastructure
+  JUP: "@JupiterExchange",
+  JTO: "@jaborbs",
+  RAY: "@RaydiumProtocol",
+  TNSR: "@TensorFdn",
+  DRIFT: "@DriftProtocol",
+  PYTH: "@PythNetwork",
+  ORCA: "@orca_so",
+  MNDE: "@MarinadeFinance",
+  BLZE: "@SolBlaze",
+  GRASS: "@getgrass_io",
+  PENGU: "@pudgypenguins",
+
+  // Political
+  TRUMP: "@GetTrumpMemes",
+  MELANIA: "@MELANIAMEME",
+};
+
+/**
+ * Get Twitter handle for a token (if we have it)
+ */
+function getTokenTwitter(symbol: string): string | null {
+  return TOKEN_TWITTER_HANDLES[symbol.toUpperCase()] || null;
+}
+
 // Initialize Twitter client (singleton)
 let twitterClient: TwitterApi | null = null;
 
@@ -74,10 +125,12 @@ export async function tweetRoundStart(
 
   const blinkUrl = getBlinkUrl(roundId, baseUrl);
   const priceStr = formatPrice(startPrice);
+  const twitterHandle = getTokenTwitter(tokenSymbol);
+  const tokenMention = twitterHandle ? ` ${twitterHandle}` : "";
 
   const text = `🎲 Round #${roundId} is LIVE!
 
-$${tokenSymbol.toUpperCase()} (${tokenName}) - Will it pump or dump in 24h?
+$${tokenSymbol.toUpperCase()}${tokenMention} - Will it pump or dump in 24h?
 
 📊 Starting price: $${priceStr}
 ⏰ Betting closes in 12 hours
@@ -130,10 +183,12 @@ export async function tweetRoundSettled(
 
   const outcomeEmoji = winningSide === "LONG" ? "📈 PUMPED!" : "📉 DUMPED!";
   const changeEmoji = change >= 0 ? "📈" : "📉";
+  const twitterHandle = getTokenTwitter(tokenSymbol);
+  const tokenMention = twitterHandle ? ` ${twitterHandle}` : "";
 
   const text = `🏁 Round #${roundId} SETTLED!
 
-$${tokenSymbol.toUpperCase()} ${outcomeEmoji}
+$${tokenSymbol.toUpperCase()}${tokenMention} ${outcomeEmoji}
 
 📊 Start: $${startPriceStr}
 📊 End: $${endPriceStr}
@@ -187,10 +242,12 @@ export async function tweetBettingClosed(
   const longSol = (longPool / 1e9).toFixed(2);
   const shortSol = (shortPool / 1e9).toFixed(2);
   const totalSol = (totalPool / 1e9).toFixed(2);
+  const twitterHandle = getTokenTwitter(tokenSymbol);
+  const tokenMention = twitterHandle ? ` ${twitterHandle}` : "";
 
   const text = `🔒 BETTING CLOSED for Round #${roundId}!
 
-$${tokenSymbol.toUpperCase()} ${changeEmoji} ${changeStr}% since start
+$${tokenSymbol.toUpperCase()}${tokenMention} ${changeEmoji} ${changeStr}% since start
 
 Final positions:
 🟢 LONG: ${longSol} SOL (${longPct}%)
