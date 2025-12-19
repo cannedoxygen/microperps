@@ -648,31 +648,30 @@ export default async function handler(
           console.log(`Found unsettled round ${roundIdToSettle} (status=${roundInfo.status}), attempting to settle...`);
           const settled = await settlePreviousRound(connection, admin, roundIdToSettle);
 
-          // If settled successfully, process all payouts
+          // If settled successfully, process all payouts and tweet
           if (settled) {
             const payoutsProcessed = await processPayouts(connection, admin, roundIdToSettle);
 
             // Get full round data for settlement tweet
             const fullRoundInfo = await getFullRoundInfo(connection, roundIdToSettle);
             if (fullRoundInfo && fullRoundInfo.winningSide) {
-              // Tweet settlement (non-blocking - don't await)
-              tweetRoundSettled(
-                roundIdToSettle,
-                fullRoundInfo.assetSymbol,
-                fullRoundInfo.startPrice,
-                fullRoundInfo.endPrice,
-                fullRoundInfo.winningSide,
-                fullRoundInfo.leftPool + fullRoundInfo.rightPool,
-                payoutsProcessed
-              )
-                .then((tweetId) => {
-                  if (tweetId) {
-                    console.log(`[Twitter] Settlement tweet posted for round ${roundIdToSettle}: ${tweetId}`);
-                  }
-                })
-                .catch((err) => {
-                  console.error(`[Twitter] Failed to post settlement tweet for round ${roundIdToSettle}:`, err);
-                });
+              // Tweet settlement - await to ensure it completes before function ends
+              try {
+                const tweetId = await tweetRoundSettled(
+                  roundIdToSettle,
+                  fullRoundInfo.assetSymbol,
+                  fullRoundInfo.startPrice,
+                  fullRoundInfo.endPrice,
+                  fullRoundInfo.winningSide,
+                  fullRoundInfo.leftPool + fullRoundInfo.rightPool,
+                  payoutsProcessed
+                );
+                if (tweetId) {
+                  console.log(`[Twitter] Settlement tweet posted for round ${roundIdToSettle}: ${tweetId}`);
+                }
+              } catch (err) {
+                console.error(`[Twitter] Failed to post settlement tweet for round ${roundIdToSettle}:`, err);
+              }
             }
           }
         } else if (roundInfo.status === 2) {
@@ -698,23 +697,22 @@ export default async function handler(
 
     console.log(`Started round ${currentRoundId}: ${sig}`);
 
-    // Tweet about the new round (non-blocking)
+    // Tweet about the new round - await to ensure it completes
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://microperps.fun";
-    tweetRoundStart(
-      currentRoundId,
-      token.tokenSymbol,
-      token.tokenName,
-      currentPrice,
-      baseUrl
-    )
-      .then((tweetId) => {
-        if (tweetId) {
-          console.log(`[Twitter] Round start tweet posted: ${tweetId}`);
-        }
-      })
-      .catch((err) => {
-        console.error("[Twitter] Failed to post round start tweet:", err);
-      });
+    try {
+      const tweetId = await tweetRoundStart(
+        currentRoundId,
+        token.tokenSymbol,
+        token.tokenName,
+        currentPrice,
+        baseUrl
+      );
+      if (tweetId) {
+        console.log(`[Twitter] Round start tweet posted: ${tweetId}`);
+      }
+    } catch (err) {
+      console.error("[Twitter] Failed to post round start tweet:", err);
+    }
 
     return res.status(200).json({
       success: true,
