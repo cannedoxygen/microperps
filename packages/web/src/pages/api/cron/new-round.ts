@@ -652,9 +652,14 @@ export default async function handler(
           if (settled) {
             const payoutsProcessed = await processPayouts(connection, admin, roundIdToSettle);
 
+            // Small delay to ensure RPC has updated data
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             // Get full round data for settlement tweet
             const fullRoundInfo = await getFullRoundInfo(connection, roundIdToSettle);
-            if (fullRoundInfo && fullRoundInfo.winningSide) {
+            // Always tweet settlement, even with 0 bets - winningSide is set by settle_round
+            if (fullRoundInfo) {
+              const winningSide = fullRoundInfo.winningSide || (fullRoundInfo.endPrice < fullRoundInfo.startPrice ? "SHORT" : "LONG");
               // Tweet settlement - await to ensure it completes before function ends
               try {
                 const tweetId = await tweetRoundSettled(
@@ -662,7 +667,7 @@ export default async function handler(
                   fullRoundInfo.assetSymbol,
                   fullRoundInfo.startPrice,
                   fullRoundInfo.endPrice,
-                  fullRoundInfo.winningSide,
+                  winningSide,
                   fullRoundInfo.leftPool + fullRoundInfo.rightPool,
                   payoutsProcessed
                 );
