@@ -88,6 +88,39 @@ function getTwitterClient(): TwitterApi | null {
 }
 
 /**
+ * Retry wrapper for tweet operations
+ */
+async function tweetWithRetry(
+  client: TwitterApi,
+  text: string,
+  maxRetries: number = 3
+): Promise<string | null> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const tweet = await client.v2.tweet(text);
+      return tweet.data.id;
+    } catch (error) {
+      const err = error as { code?: number; message?: string };
+      console.error(`[Twitter] Attempt ${attempt}/${maxRetries} failed:`, err.message || error);
+
+      // Don't retry on auth errors or duplicate tweets
+      if (err.code === 401 || err.code === 403 || err.code === 187) {
+        console.error("[Twitter] Non-retryable error, giving up");
+        return null;
+      }
+
+      if (attempt < maxRetries) {
+        const delay = 2000 * attempt; // 2s, 4s, 6s
+        console.log(`[Twitter] Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  console.error("[Twitter] All retry attempts failed");
+  return null;
+}
+
+/**
  * Format price for display
  */
 function formatPrice(priceScaled: number): string {
@@ -142,15 +175,12 @@ $${tokenSymbol.toUpperCase()}${tokenMention} - Will it pump or dump in 24h?
 
 ${blinkUrl}`;
 
-  try {
-    console.log("[Twitter] Posting round start tweet...");
-    const tweet = await client.v2.tweet(text);
-    console.log("[Twitter] Round start tweet posted:", tweet.data.id);
-    return tweet.data.id;
-  } catch (error) {
-    console.error("[Twitter] Failed to post round start tweet:", error);
-    return null;
+  console.log("[Twitter] Posting round start tweet...");
+  const tweetId = await tweetWithRetry(client, text);
+  if (tweetId) {
+    console.log("[Twitter] Round start tweet posted:", tweetId);
   }
+  return tweetId;
 }
 
 /**
@@ -201,15 +231,12 @@ ${changeEmoji} Change: ${changeStr}%
 
 Next round starting soon... 👀`;
 
-  try {
-    console.log("[Twitter] Posting settlement tweet...");
-    const tweet = await client.v2.tweet(text);
-    console.log("[Twitter] Settlement tweet posted:", tweet.data.id);
-    return tweet.data.id;
-  } catch (error) {
-    console.error("[Twitter] Failed to post settlement tweet:", error);
-    return null;
+  console.log("[Twitter] Posting settlement tweet...");
+  const tweetId = await tweetWithRetry(client, text);
+  if (tweetId) {
+    console.log("[Twitter] Settlement tweet posted:", tweetId);
   }
+  return tweetId;
 }
 
 /**
@@ -259,15 +286,12 @@ Final positions:
 
 Who will win? 👀`;
 
-  try {
-    console.log("[Twitter] Posting betting closed tweet...");
-    const tweet = await client.v2.tweet(text);
-    console.log("[Twitter] Betting closed tweet posted:", tweet.data.id);
-    return tweet.data.id;
-  } catch (error) {
-    console.error("[Twitter] Failed to post betting closed tweet:", error);
-    return null;
+  console.log("[Twitter] Posting betting closed tweet...");
+  const tweetId = await tweetWithRetry(client, text);
+  if (tweetId) {
+    console.log("[Twitter] Betting closed tweet posted:", tweetId);
   }
+  return tweetId;
 }
 
 /**
@@ -313,14 +337,11 @@ Early bird bonus drops to 1.15x in 3 hours!
 
 ${blinkUrl}`;
 
-  try {
-    const tweet = await client.v2.tweet(text);
-    console.log("[Twitter] Mid-round reminder posted:", tweet.data.id);
-    return tweet.data.id;
-  } catch (error) {
-    console.error("[Twitter] Failed to post mid-round reminder:", error);
-    return null;
+  const tweetId = await tweetWithRetry(client, text);
+  if (tweetId) {
+    console.log("[Twitter] Mid-round reminder posted:", tweetId);
   }
+  return tweetId;
 }
 
 /**

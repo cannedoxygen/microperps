@@ -79,10 +79,33 @@ async function fetchPythPrice(pythFeedId: string): Promise<number> {
 }
 
 /**
+ * Retry wrapper for async functions
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.log(`Retry ${i + 1}/${maxRetries} failed: ${lastError.message}`);
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Get the current round counter from config account
  */
 async function getCurrentRoundCounter(connection: Connection): Promise<number> {
-  const accountInfo = await connection.getAccountInfo(CONFIG_PDA);
+  const accountInfo = await withRetry(() => connection.getAccountInfo(CONFIG_PDA));
   if (!accountInfo) {
     throw new Error("Config account not found");
   }
@@ -416,7 +439,8 @@ async function processPayouts(
         processed += tx.instructions.length;
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log(`Failed to process payouts ${i}-${batchEnd - 1}: ${errorMessage}`);
+        console.error(`[PAYOUT ERROR] Failed to process payouts ${i}-${batchEnd - 1}: ${errorMessage}`);
+        // Don't throw - continue with remaining batches
       }
     }
   }
@@ -697,7 +721,13 @@ export default async function handler(
         }
 
         // Only settle if status is Open (0) or Locked (1) - not Settling (2)
+        // AND the round has actually ended (past end_time)
         if (roundInfo.status === 0 || roundInfo.status === 1) {
+          const endedCheck = await isRoundEnded(connection, roundIdToSettle);
+          if (!endedCheck?.ended) {
+            console.log(`Round ${roundIdToSettle} hasn't ended yet, skipping settlement`);
+            continue;
+          }
           console.log(`Found unsettled round ${roundIdToSettle} (status=${roundInfo.status}), attempting to settle...`);
           const settled = await settlePreviousRound(connection, admin, roundIdToSettle);
 
@@ -705,8 +735,8 @@ export default async function handler(
           if (settled) {
             const payoutsProcessed = await processPayouts(connection, admin, roundIdToSettle);
 
-            // Small delay to ensure RPC has updated data
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Delay to ensure RPC has updated data after settlement
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
             // Get full round data for settlement tweet
             const fullRoundInfo = await getFullRoundInfo(connection, roundIdToSettle);
