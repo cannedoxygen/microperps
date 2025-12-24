@@ -145,6 +145,38 @@ interface FullRoundInfo {
 }
 
 /**
+ * Check if a round has ended (past its end_time)
+ */
+async function isRoundEnded(
+  connection: Connection,
+  roundId: number
+): Promise<{ ended: boolean; status: number; endTime: number } | null> {
+  const [roundPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("round"), new BN(roundId).toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  );
+
+  const roundInfo = await connection.getAccountInfo(roundPda);
+  if (!roundInfo) return null;
+
+  const data = roundInfo.data;
+  const assetLen = data.readUInt32LE(16);
+  const baseOffset = 20 + assetLen;
+
+  // end_time is at: baseOffset + 8 (start_price) + 8 (end_price) + 8 (start_time) + 8 (betting_end_time)
+  const endTimeOffset = baseOffset + 32;
+  const endTime = Number(data.readBigInt64LE(endTimeOffset));
+
+  // status is at: endTimeOffset + 8
+  const status = data.readUInt8(endTimeOffset + 8);
+
+  const now = Math.floor(Date.now() / 1000);
+  const ended = now >= endTime;
+
+  return { ended, status, endTime };
+}
+
+/**
  * Get round info including bet count
  */
 async function getRoundInfo(
@@ -621,9 +653,30 @@ export default async function handler(
       Uint8Array.from(JSON.parse(adminPrivateKey))
     );
 
-    // Get current round counter
+    // Get current round counter (this is the NEXT round to be created)
     const currentRoundId = await getCurrentRoundCounter(connection);
     console.log(`Current round counter: ${currentRoundId}`);
+
+    // Check if there's an active round that hasn't ended yet
+    // The most recent round is currentRoundId - 1
+    if (currentRoundId > 0) {
+      const lastRoundId = currentRoundId - 1;
+      const lastRoundStatus = await isRoundEnded(connection, lastRoundId);
+
+      if (lastRoundStatus && !lastRoundStatus.ended && lastRoundStatus.status !== 3) {
+        // Round hasn't ended yet, nothing to do
+        const timeRemaining = lastRoundStatus.endTime - Math.floor(Date.now() / 1000);
+        const hoursRemaining = Math.floor(timeRemaining / 3600);
+        const minsRemaining = Math.floor((timeRemaining % 3600) / 60);
+        console.log(`Round ${lastRoundId} still active. Ends in ${hoursRemaining}h ${minsRemaining}m. Skipping.`);
+
+        return res.status(200).json({
+          success: true,
+          message: `Round ${lastRoundId} still active`,
+          endsIn: `${hoursRemaining}h ${minsRemaining}m`,
+        });
+      }
+    }
 
     // Pick random token (with 30-round cooldown)
     const token = await pickRandomToken(connection, currentRoundId);
